@@ -18,23 +18,6 @@ def eucledian_dist(F1, F2):
     return torch.cdist(F1, F2, p=2)
 
 
-def check_support_cover(idx, n):
-    """
-    Verify that every real target column appears at least once in the support.
-    """
-    covered = torch.zeros(n, dtype=torch.bool, device=idx.device)
-    covered.scatter_(0, idx.reshape(-1), True)
-
-    missing = (~covered).nonzero(as_tuple=False).reshape(-1)
-    if missing.numel() > 0:
-        bad = missing.tolist()
-        raise ValueError(
-            "Support idx does not cover all target columns. "
-            f"Missing columns: {bad[:20]}{' ...' if len(bad) > 20 else ''}. "
-            "Increase k or change support construction."
-        )
-
-
 def compute_sparse_gradient_n_k(A, B, P, idx, Dk, mu, lam):
     """
     Compute the gradient restricted to the support idx.
@@ -78,7 +61,10 @@ def compute_sparse_gradient_n_k(A, B, P, idx, Dk, mu, lam):
 
 def sinkhorn_sparse(idx, G_sparse, reg, a=None, b=None, maxIter=500, stopThr=1e-5):
     """
-    Sinkhorn on the support defined by idx.
+    Sparse analogue of the dense update:
+        q = Sinkhorn(G)
+        q = q * mask
+        q = row_normalize(q)
 
     q[i, t] represents the mass on the real entry (i, idx[i, t]).
     """
@@ -89,36 +75,37 @@ def sinkhorn_sparse(idx, G_sparse, reg, a=None, b=None, maxIter=500, stopThr=1e-
 
     if a is None:
         a = torch.ones(n, dtype=dtype, device=device)
-    if b is None:
-        b = torch.ones(n, dtype=dtype, device=device)
-
-    check_support_cover(idx, n)
 
     G_shift = G_sparse - G_sparse.min()
     K = torch.exp(-G_shift / reg).clamp_min(eps)
 
-    u = torch.ones(n, dtype=dtype, device=device)
     v = torch.ones(n, dtype=dtype, device=device)
+    q = K / K.sum(dim=1, keepdim=True).clamp_min(eps)
 
     for _ in range(maxIter):
-        u_prev = u
         v_prev = v
 
-        row_sum = (K * v[idx]).sum(dim=1).clamp_min(eps)
-        u = a / row_sum
+        q = K * v[idx]
+        q = q / q.sum(dim=1, keepdim=True).clamp_min(eps)
+        q = q * a.unsqueeze(1)
 
-        weighted = u.unsqueeze(1) * K
         col_sum = torch.zeros(n, dtype=dtype, device=device)
-        col_sum.scatter_add_(0, idx.reshape(-1), weighted.reshape(-1))
-        col_sum = col_sum.clamp_min(eps)
-        v = b / col_sum
+        col_sum.scatter_add_(0, idx.reshape(-1), q.reshape(-1))
 
-        du = torch.max(torch.abs(u - u_prev))
+        v = torch.ones(n, dtype=dtype, device=device)
+        covered = col_sum > eps
+        if b is None:
+            v[covered] = 1.0 / col_sum[covered]
+        else:
+            v[covered] = b[covered] / col_sum[covered]
+
         dv = torch.max(torch.abs(v - v_prev))
-        if max(float(du), float(dv)) < stopThr:
+        if float(dv) < stopThr:
             break
 
-    return u.unsqueeze(1) * K * v[idx]
+    q = K * v[idx]
+    q = q / q.sum(dim=1, keepdim=True).clamp_min(eps)
+    return q * a.unsqueeze(1)
 
 
 def sparse_argmax_matching(idx, P):
@@ -131,18 +118,15 @@ def sparse_argmax_matching(idx, P):
 
 def sparse_hungarian(idx, P, n1, n2):
     """
-    Support-constrained one-to-one matching without materializing a dense n x n P.
+    Dense Hungarian with implicit zero completion outside the sparse support.
     """
     n = idx.shape[0]
-    scores = P.detach().cpu().numpy().reshape(-1)
+    score_matrix = np.zeros((n, n), dtype=np.float64)
     rows = np.repeat(np.arange(n), idx.shape[1])
     cols = idx.detach().cpu().numpy().reshape(-1)
+    score_matrix[rows, cols] = P.detach().cpu().numpy().reshape(-1)
 
-    max_score = float(scores.max()) if scores.size else 0.0
-    costs = (max_score - scores) + 1e-12
-    sparse_cost = scipy.sparse.coo_matrix((costs, (rows, cols)), shape=(n, n)).tocsr()
-
-    row_ind, col_ind = scipy.sparse.csgraph.min_weight_full_bipartite_matching(sparse_cost)
+    row_ind, col_ind = scipy.optimize.linear_sum_assignment(score_matrix, maximize=True)
 
     ans = []
     for i, j in zip(row_ind.tolist(), col_ind.tolist()):
@@ -162,17 +146,7 @@ def FindQuasiPerm_n_k(A, B, D, mu, niter, idx, reg=1.0, sinkhorn_iter=500, sinkh
 
     Dk = torch.gather(D, 1, idx)
     a = torch.ones(n, dtype=dtype, device=device)
-    b = torch.ones(n, dtype=dtype, device=device)
-
-    P = sinkhorn_sparse(
-        idx=idx,
-        G_sparse=torch.zeros_like(Dk),
-        reg=reg,
-        a=a,
-        b=b,
-        maxIter=sinkhorn_iter,
-        stopThr=sinkhorn_thr,
-    )
+    P = torch.full((n, idx.shape[1]), 1.0 / idx.shape[1], dtype=dtype, device=device)
 
     for outer in range(niter):
         for it in range(1, 11):
@@ -191,7 +165,6 @@ def FindQuasiPerm_n_k(A, B, D, mu, niter, idx, reg=1.0, sinkhorn_iter=500, sinkh
                 G_sparse=G,
                 reg=reg,
                 a=a,
-                b=b,
                 maxIter=sinkhorn_iter,
                 stopThr=sinkhorn_thr,
             )
@@ -228,8 +201,6 @@ def fly_n_k(Gq, Gt, k, mu=0.5, niter=15, reg=1.0, device="cpu", return_matching=
 
     D = eucledian_dist(F1, F2)
     idx = torch.topk(D, k=k, dim=1, largest=False).indices
-
-    check_support_cover(idx, n)
 
     P = FindQuasiPerm_n_k(
         A=A,
