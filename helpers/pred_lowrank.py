@@ -22,11 +22,38 @@ def truncated_spectral_embedding(G, rank):
     A = build_sparse_adjacency(G)
     n = A.shape[0]
     rank = max(1, min(rank, n - 2))
+    vals = vecs = None
 
-    vals, vecs = eigsh(A, k=rank, which="LM")
-    order = np.argsort(-np.abs(vals))
-    vals = vals[order]
-    vecs = vecs[:, order]
+    configs = [
+        {"which": "LM", "tol": 1e-3, "maxiter": 2000},
+        {"which": "LA", "tol": 1e-3, "maxiter": 2000},
+        {"which": "LM", "tol": 1e-2, "maxiter": 1000},
+    ]
+
+    last_error = None
+    for cfg in configs:
+        try:
+            vals, vecs = eigsh(
+                A,
+                k=rank,
+                which=cfg["which"],
+                tol=cfg["tol"],
+                maxiter=cfg["maxiter"],
+            )
+            break
+        except Exception as exc:
+            last_error = exc
+
+    if vals is None or vecs is None:
+        A_dense = A.toarray()
+        vals, vecs = np.linalg.eigh(A_dense)
+        order = np.argsort(-np.abs(vals))[:rank]
+        vals = vals[order]
+        vecs = vecs[:, order]
+    else:
+        order = np.argsort(-np.abs(vals))
+        vals = vals[order]
+        vecs = vecs[:, order]
 
     emb = vecs * np.sqrt(np.abs(vals) + 1e-12)
     deg = np.asarray(A.sum(axis=1)).ravel()
