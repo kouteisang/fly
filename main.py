@@ -5,10 +5,10 @@ from helpers.pred import fly
 from helpers.metrics import eval_align
 
 if __name__ == "__main__":
-    n = 1004
+    n = 327
     k = n//2
     # 加载图数据
-    query = open('/home/cheng/fly/data/real_noise/MultiMagna/yeast0_Y2H1.txt', 'r')
+    query = open('/home/cheng/fly/data/real_noise/contacts-prox-high-school-2013/contacts-prox-high-school-2013_100.txt', 'r')
     lines = query.readlines()
     Gquery = nx.Graph()
     for i in range(n): Gquery.add_node(i)
@@ -19,7 +19,7 @@ if __name__ == "__main__":
         Gquery.add_edge(u, v)
 
     # target file
-    target = open("/home/cheng/fly/data/real_noise/MultiMagna/yeast25_Y2H1.txt", "r")
+    target = open("/home/cheng/fly/data/real_noise/contacts-prox-high-school-2013/contacts-prox-high-school-2013_80.txt", "r")
     lines = target.readlines()
     Gtarget = nx.Graph()
     for i in range(n): Gtarget.add_node(i)

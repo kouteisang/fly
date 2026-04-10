@@ -75,7 +75,7 @@ def eucledian_dist(F1, F2, n):
     return D
 
 
-def FindQuasiPerm(A, B, D, mu, niter, idx, k):
+def FindQuasiPerm_n_n(A, B, D, mu, niter, idx, k):
     n = A.shape[0]
     dtype = torch.float64
     device = A.device
@@ -110,6 +110,62 @@ def FindQuasiPerm(A, B, D, mu, niter, idx, k):
     return P
 
 
+
+# def compute_sparse_gradient_n_k(A, B, P, idx, Dk, lam, mu):
+#     """
+#     A, B : [n, n]
+#     P    : [n, k]
+#     idx  : [n, k]
+#     Dk   : [n, k]
+#     """
+#     n, k = P.shape
+#     dtype = P.dtype
+#     device = P.device
+
+#     G = torch.zeros((n, k), dtype=dtype, device=device)
+
+#     for i in range(n):
+#         for t in range(k):
+#             j = idx[i, t].item()
+
+#             term1 = 0.0
+#             term2 = 0.0
+
+#             for u in range(n):
+#                 # 第一项: A[u,i] * sum_s P[u,s] * B[idx[u,s], j]
+#                 if A[u, i] != 0:
+#                     term1 += A[u, i] * torch.dot(P[u], B[idx[u], j])
+
+#                 # 第二项: A[i,u] * sum_s P[u,s] * B[j, idx[u,s]]
+#                 if A[i, u] != 0:
+#                     term2 += A[i, u] * torch.dot(P[u], B[j, idx[u]])
+
+#             G[i, t] = -term1 - term2 + mu * Dk[i, t] + lam * (1.0 - 2.0 * P[i, t])
+
+#     return G
+
+# def FindQuasiPerm_n_k(A, B, D, mu, niter, idx, k):
+#     n = A.shape[0]
+#     dtype = A.dtype
+#     device = A.device
+#     eps = 1e-12
+#     Dk = torch.gather(D, 1, idx)
+
+#     P = torch.ones((n, k), dtype=dtype, device=device) / k
+
+#     for outer in range(niter):
+#         for it in range(1, 11):
+#             G = compute_sparse_gradient_n_k(A, B, P, idx, Dk, lam=outer, mu=mu)
+
+#             alpha = 2.0 / (2.0 + it)
+
+#             P = P * torch.exp(-alpha * G)
+#             P = P / P.sum(dim=1, keepdim=True).clamp_min(eps)
+
+#     return P
+
+
+
 def fly(Gq, Gt, n, k, mu=0.5, niter=15):
     n1 = len(Gq.nodes())
     n2 = len(Gt.nodes())
@@ -135,7 +191,7 @@ def fly(Gq, Gt, n, k, mu=0.5, niter=15):
 
     idx = torch.topk(D, k=k, dim=1, largest=False).indices
 
-    P = FindQuasiPerm(A, B, D, mu, niter, idx, k)
+    P = FindQuasiPerm_n_n(A, B, D, mu, niter, idx, k)
     
     P_perm, ans = convertToPermHungarian(P, n, n)
     return ans
