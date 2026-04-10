@@ -4,6 +4,7 @@ import scipy
 import torch
 
 from helpers.pred import feature_extraction
+from helpers import sinkhorn
 
 
 def eucledian_dist(F1, F2):
@@ -18,94 +19,20 @@ def eucledian_dist(F1, F2):
     return torch.cdist(F1, F2, p=2)
 
 
-def compute_sparse_gradient_n_k(A, B, P, idx, Dk, mu, lam):
+def sparse_to_dense(idx, P_sparse, n):
     """
-    Compute the gradient restricted to the support idx.
-
-    For support entry (i, t) representing real column j = idx[i, t], this
-    matches the dense formulation:
-        G[i, j] = -(A^T P B)[i, j] - (A P B^T)[i, j] + mu * D[i, j] + lam * (1 - 2P[i, j])
-    but is evaluated only on the supported columns.
+    Materialize a dense n x n matrix from the sparse support representation.
     """
-    n, k = P.shape
-    dtype = P.dtype
-    device = P.device
-
-    G = torch.empty((n, k), dtype=dtype, device=device)
-    unique_js = torch.unique(idx)
-
-    for j_tensor in unique_js:
-        j = int(j_tensor.item())
-
-        # x[u] = sum_s P[u, s] * B[idx[u, s], j]
-        x = (P * B[idx, j]).sum(dim=1)
-
-        # y[u] = sum_s P[u, s] * B[j, idx[u, s]]
-        y = (P * B[j, idx]).sum(dim=1)
-
-        term1 = torch.mv(A.T, x)
-        term2 = torch.mv(A, y)
-
-        pos = idx == j
-        row_ids = pos.nonzero(as_tuple=True)[0]
-
-        G[pos] = (
-            -term1[row_ids]
-            -term2[row_ids]
-            + mu * Dk[pos]
-            + lam * (1.0 - 2.0 * P[pos])
-        )
-
-    return G
+    P_dense = torch.zeros((n, n), dtype=P_sparse.dtype, device=P_sparse.device)
+    P_dense.scatter_(1, idx, P_sparse)
+    return P_dense
 
 
-def sinkhorn_sparse(idx, G_sparse, reg, a=None, b=None, maxIter=500, stopThr=1e-5):
+def dense_to_sparse(idx, M_dense):
     """
-    Sparse analogue of the dense update:
-        q = Sinkhorn(G)
-        q = q * mask
-        q = row_normalize(q)
-
-    q[i, t] represents the mass on the real entry (i, idx[i, t]).
+    Gather supported entries from a dense matrix into n x k form.
     """
-    n, _ = idx.shape
-    dtype = G_sparse.dtype
-    device = G_sparse.device
-    eps = 1e-12
-
-    if a is None:
-        a = torch.ones(n, dtype=dtype, device=device)
-
-    G_shift = G_sparse - G_sparse.min()
-    K = torch.exp(-G_shift / reg).clamp_min(eps)
-
-    v = torch.ones(n, dtype=dtype, device=device)
-    q = K / K.sum(dim=1, keepdim=True).clamp_min(eps)
-
-    for _ in range(maxIter):
-        v_prev = v
-
-        q = K * v[idx]
-        q = q / q.sum(dim=1, keepdim=True).clamp_min(eps)
-        q = q * a.unsqueeze(1)
-
-        col_sum = torch.zeros(n, dtype=dtype, device=device)
-        col_sum.scatter_add_(0, idx.reshape(-1), q.reshape(-1))
-
-        v = torch.ones(n, dtype=dtype, device=device)
-        covered = col_sum > eps
-        if b is None:
-            v[covered] = 1.0 / col_sum[covered]
-        else:
-            v[covered] = b[covered] / col_sum[covered]
-
-        dv = torch.max(torch.abs(v - v_prev))
-        if float(dv) < stopThr:
-            break
-
-    q = K * v[idx]
-    q = q / q.sum(dim=1, keepdim=True).clamp_min(eps)
-    return q * a.unsqueeze(1)
+    return torch.gather(M_dense, 1, idx)
 
 
 def sparse_argmax_matching(idx, P):
@@ -138,39 +65,44 @@ def sparse_hungarian(idx, P, n1, n2):
 
 def FindQuasiPerm_n_k(A, B, D, mu, niter, idx, reg=1.0, sinkhorn_iter=500, sinkhorn_thr=1e-5):
     """
-    n x k version of FindQuasiPerm that keeps P in sparse-support form throughout.
+    Hybrid version:
+    P is stored as n x k, but each q update follows the dense pred.py semantics
+    exactly by temporarily materializing the masked dense matrix.
     """
     n = A.shape[0]
     dtype = A.dtype
     device = A.device
+    eps = 1e-12
+    k = idx.shape[1]
 
-    Dk = torch.gather(D, 1, idx)
-    a = torch.ones(n, dtype=dtype, device=device)
-    P = torch.full((n, idx.shape[1]), 1.0 / idx.shape[1], dtype=dtype, device=device)
+    ones = torch.ones(n, dtype=dtype, device=device)
+    mat_ones = torch.ones((n, n), dtype=dtype, device=device)
+    P = torch.full((n, k), 1.0 / k, dtype=dtype, device=device)
 
     for outer in range(niter):
         for it in range(1, 11):
-            G = compute_sparse_gradient_n_k(
-                A=A,
-                B=B,
-                P=P,
-                idx=idx,
-                Dk=Dk,
-                mu=mu,
-                lam=outer,
+            P_dense = sparse_to_dense(idx, P, n)
+            G_dense = (
+                -torch.mm(torch.mm(A.T, P_dense), B)
+                - torch.mm(torch.mm(A, P_dense), B.T)
+                + mu * D
+                + outer * (mat_ones - 2.0 * P_dense)
             )
 
-            q = sinkhorn_sparse(
-                idx=idx,
-                G_sparse=G,
-                reg=reg,
-                a=a,
+            q_dense = sinkhorn.sinkhorn(
+                ones,
+                ones,
+                G_dense,
+                reg,
                 maxIter=sinkhorn_iter,
                 stopThr=sinkhorn_thr,
             )
+            q = dense_to_sparse(idx, q_dense)
+            q = q / q.sum(dim=1, keepdim=True).clamp_min(eps)
 
             alpha = 2.0 / float(2.0 + it)
             P = P + alpha * (q - P)
+            P = P / P.sum(dim=1, keepdim=True).clamp_min(eps)
 
     return P
 
