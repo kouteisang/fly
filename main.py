@@ -7,6 +7,7 @@ import numpy as np
 
 from helpers.metrics import eval_align
 from helpers.pred import fly
+from helpers.pred_lowrank import fly_lowrank
 from helpers.pred_n_k import fly_n_k
 
 
@@ -29,9 +30,9 @@ def parse_args():
     )
     parser.add_argument(
         "--mode",
-        choices=["dense", "sparse", "hybrid"],
+        choices=["dense", "sparse", "hybrid", "lowrank"],
         default="dense",
-        help="Choose dense, true sparse, or hybrid sparse alignment.",
+        help="Choose dense, true sparse, hybrid, or lowrank alignment.",
     )
     parser.add_argument(
         "--n",
@@ -63,6 +64,30 @@ def parse_args():
         type=float,
         default=0.35,
         help="Soft column rebalance strength for the true sparse transport update.",
+    )
+    parser.add_argument(
+        "--rank",
+        type=int,
+        default=32,
+        help="Low-rank embedding dimension for lowrank mode.",
+    )
+    parser.add_argument(
+        "--tau",
+        type=float,
+        default=1.0,
+        help="Distance temperature used to convert lowrank distances into scores.",
+    )
+    parser.add_argument(
+        "--feature-weight",
+        type=float,
+        default=1.0,
+        help="Weight of handcrafted features in lowrank mode.",
+    )
+    parser.add_argument(
+        "--spectral-weight",
+        type=float,
+        default=1.0,
+        help="Weight of spectral embeddings in lowrank mode.",
     )
     return parser.parse_args()
 
@@ -106,6 +131,18 @@ def load_graph(path, n=None):
 def run_alignment(args, Gquery, Gtarget, n, k):
     if args.mode == "dense":
         return fly(Gquery, Gtarget, n, k, mu=args.mu, niter=args.niter)
+
+    if args.mode == "lowrank":
+        return fly_lowrank(
+            Gquery,
+            Gtarget,
+            k=k,
+            rank=args.rank,
+            chunk_size=args.chunk_size,
+            tau=args.tau,
+            feature_weight=args.feature_weight,
+            spectral_weight=args.spectral_weight,
+        )
 
     return fly_n_k(
         Gquery,
@@ -160,6 +197,10 @@ def main():
     print(f"niter: {args.niter}")
     print(f"beta: {args.beta}")
     print(f"chunk_size: {args.chunk_size}")
+    print(f"rank: {args.rank}")
+    print(f"tau: {args.tau}")
+    print(f"feature_weight: {args.feature_weight}")
+    print(f"spectral_weight: {args.spectral_weight}")
     print(f"time: {time_end - time_start}")
     print(f"matched_pairs: {len(ans)}")
     print(f"gacc: {gacc}")
