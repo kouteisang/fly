@@ -12,8 +12,8 @@ from helpers.pred_n_k import fly_n_k
 
 
 ROOT = Path(__file__).resolve().parent
-DEFAULT_QUERY = "data/real_noise/contacts-prox-high-school-2013/contacts-prox-high-school-2013_100.txt"
-DEFAULT_TARGET = "data/real_noise/contacts-prox-high-school-2013/contacts-prox-high-school-2013_80.txt"
+DEFAULT_QUERY = "data/real_noise/MultiMagna/yeast0_Y2H1.txt"
+DEFAULT_TARGET = "data/real_noise/MultiMagna/yeast5_Y2H1.txt"
 
 
 def parse_args():
