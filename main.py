@@ -29,9 +29,9 @@ def parse_args():
     )
     parser.add_argument(
         "--mode",
-        choices=["dense", "sparse"],
+        choices=["dense", "sparse", "hybrid"],
         default="dense",
-        help="Choose the dense n*n algorithm or the sparse n*k algorithm.",
+        help="Choose dense, true sparse, or hybrid sparse alignment.",
     )
     parser.add_argument(
         "--n",
@@ -51,6 +51,18 @@ def parse_args():
         "--device",
         default="cpu",
         help="Torch device for the sparse implementation.",
+    )
+    parser.add_argument(
+        "--chunk-size",
+        type=int,
+        default=256,
+        help="Chunk size used when building sparse top-k supports.",
+    )
+    parser.add_argument(
+        "--beta",
+        type=float,
+        default=0.35,
+        help="Soft column rebalance strength for the true sparse transport update.",
     )
     return parser.parse_args()
 
@@ -103,6 +115,9 @@ def run_alignment(args, Gquery, Gtarget, n, k):
         niter=args.niter,
         device=args.device,
         return_matching=True,
+        chunk_size=args.chunk_size,
+        beta=args.beta,
+        mode=args.mode,
     )
 
 
@@ -143,6 +158,8 @@ def main():
     print(f"k: {k}")
     print(f"mu: {args.mu}")
     print(f"niter: {args.niter}")
+    print(f"beta: {args.beta}")
+    print(f"chunk_size: {args.chunk_size}")
     print(f"time: {time_end - time_start}")
     print(f"matched_pairs: {len(ans)}")
     print(f"gacc: {gacc}")
