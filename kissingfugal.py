@@ -65,6 +65,78 @@ def make_soft_matching(V: torch.Tensor, W: torch.Tensor, beta: float = 20.0) -> 
 #     col_penalty = torch.sum((torch.sum(P, dim=0) - 1.0) ** 2)
 #     return row_penalty + col_penalty
 
+
+def low_rank_graph_matching_loss(
+    U, V,              # (n, m)
+    A, B,              # (n, n) sparse or dense
+    D1, D2,            # (n, 4)
+    mu=1.0,
+    row_penalty=1.0,
+    col_penalty=1.0,
+):
+    n = U.shape[0]
+    device = U.device # n*m
+
+    # =========================
+    # 1. STRUCTURE TERM
+    # -tr(A P B^T P^T)
+    # =========================
+    if A.is_sparse:
+        AU = torch.sparse.mm(A, U) # (n, m)
+    else:
+        AU = A @ U
+
+    if B.is_sparse:
+        BV = torch.sparse.mm(B, V) # (n, m)
+    else:
+        BV = B @ V
+
+    UtAU = U.T @ AU          # (m, m)
+    VtBV = V.T @ BV          # (m, m)
+
+    structure_term = -torch.sum(UtAU * VtBV) # scalar
+
+
+    # =========================
+    # 2. FEATURE TERM
+    # mu * tr(P^T D)
+    # =========================
+    UtD1 = U.T @ D1          # (m, 4)
+    VtD2 = V.T @ D2          # (m, 4)
+
+    feature_term = mu * torch.sum(UtD1 * VtD2) # scalar
+
+
+    # =========================
+    # 3. CONSTRAINT TERM
+    # doubly stochastic penalty
+    # =========================
+    ones = torch.ones(n, device=device)
+
+    s_v = V.T @ ones         # (m,)
+    s_u = U.T @ ones         # (m,)
+
+    row_sum = U @ s_v        # (n,)
+    col_sum = V @ s_u        # (n,)
+
+    constraint_term = (
+        row_penalty * torch.sum((row_sum - 1.0) ** 2) +
+        col_penalty * torch.sum((col_sum - 1.0) ** 2)
+    )
+
+
+    # =========================
+    # TOTAL LOSS
+    # =========================
+    loss = structure_term + feature_term + constraint_term
+
+    return loss, {
+        "structure": structure_term,
+        "feature": feature_term,
+        "constraint": constraint_term,
+    }
+
+
 def fugal_loss(
     A: torch.Tensor,
     B: torch.Tensor,
