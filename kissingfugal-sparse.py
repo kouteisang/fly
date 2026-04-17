@@ -306,6 +306,9 @@ if __name__ == "__main__":
 
     Gq, Gt, n = read_file()
 
+    A = nx_to_torch_sparse(Gq, n)
+    B = nx_to_torch_sparse(Gt, n)
+
     for m in m_list:
         for beta in beta_list:
             for row_penalty in row_penalty_list:
