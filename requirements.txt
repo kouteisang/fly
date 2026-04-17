@@ -1,0 +1,8 @@
+torch==2.11.0
+torchvision==0.26.0
+numpy==2.2.6
+scipy==1.15.3
+scikit-learn==1.7.2
+matplotlib==3.10.8
+tqdm==4.67.3
+networkx==3.4.2
