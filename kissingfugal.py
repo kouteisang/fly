@@ -6,11 +6,17 @@ import scipy
 import csv
 import itertools
 
-def read_file():
-    query_path = "/home/cheng/fly/data/real_noise/contacts-prox-high-school-2013/contacts-prox-high-school-2013_100.txt"
-    target_path = "/home/cheng/fly/data/real_noise/contacts-prox-high-school-2013/contacts-prox-high-school-2013_80.txt"
+path = "/home/cheng/Fugal/data/real_noise/ACM-DBLP/pos_pairs.npy"
+data = np.load(path)
+ground_truth = {pair[0]: pair[1] for pair in data}
+# print("Ground truth mapping: ", ground_truth)
 
-    n = 327
+
+def read_file():
+    query_path = "/home/cheng/fly/data/real_noise/ACM-DBLP/ACM.txt"
+    target_path = "/home/cheng/fly/data/real_noise/ACM-DBLP/DBLP.txt"
+
+    n = 9916
     Gq = nx.Graph()
     Gt = nx.Graph()
 
@@ -66,90 +72,7 @@ def make_soft_matching(V: torch.Tensor, W: torch.Tensor, beta: float = 20.0) -> 
 #     return row_penalty + col_penalty
 
 
-def low_rank_graph_matching_loss(
-    U, V,              # (n, m)
-    A, B,              # (n, n) sparse or dense
-    D1, D2,            # (n, 4)
-    mu=1.0,
-    row_penalty=1.0,
-    col_penalty=1.0,
-):
-    n = U.shape[0]
-    device = U.device # n*m
 
-    # =========================
-    # 1. STRUCTURE TERM
-    # -tr(A P B^T P^T)
-    # =========================
-    if A.is_sparse:
-        AU = torch.sparse.mm(A, U) # (n, m)
-    else:
-        AU = A @ U
-
-    if B.is_sparse:
-        BV = torch.sparse.mm(B, V) # (n, m)
-    else:
-        BV = B @ V
-
-    UtAU = U.T @ AU          # (m, m)
-    VtBV = V.T @ BV          # (m, m)
-
-    structure_term = -torch.sum(UtAU * VtBV) # scalar
-
-
-    # =========================
-    # 2. FEATURE TERM
-    # mu * tr(P^T D)
-    # =========================
-    UtD1 = U.T @ D1          # (m, 4)
-    VtD2 = V.T @ D2          # (m, 4)
-
-    feature_term = mu * torch.sum(UtD1 * VtD2) # scalar
-
-
-    # =========================
-    # 3. CONSTRAINT TERM
-    # doubly stochastic penalty
-    # =========================
-    ones = torch.ones(n, device=device)
-
-    s_v = V.T @ ones         # (m,)
-    s_u = U.T @ ones         # (m,)
-
-    row_sum = U @ s_v        # (n,)
-    col_sum = V @ s_u        # (n,)
-
-    constraint_term = (
-        row_penalty * torch.sum((row_sum - 1.0) ** 2) +
-        col_penalty * torch.sum((col_sum - 1.0) ** 2)
-    )
-
-
-    # =========================
-    # TOTAL LOSS
-    # =========================
-    loss = structure_term + feature_term + constraint_term
-
-    return loss, {
-        "structure": structure_term,
-        "feature": feature_term,
-        "constraint": constraint_term,
-    }
-
-
-def fugal_loss(
-    A: torch.Tensor,
-    B: torch.Tensor,
-    D: torch.Tensor,
-    P: torch.Tensor,
-    mu: float,
-    row_penalty: float,
-    col_penalty: float,
-) -> torch.Tensor:
-    structure_term = -torch.trace(A @ P @ B.T @ P.T)
-    feature_term = mu * torch.trace(P.T @ D)
-    constraint_term = row_penalty * torch.sum((torch.sum(P, dim=1) - 1.0) ** 2) + col_penalty * torch.sum((torch.sum(P, dim=0) - 1.0) ** 2)
-    return structure_term + feature_term + constraint_term
 
 def fugal_loss_terms(
     A: torch.Tensor,
@@ -183,7 +106,8 @@ def train_with_adam(
         raise ValueError("This prototype assumes Gq and Gt have the same number of nodes.")
     
     device = torch.device("cuda" if use_GPU else "cpu")
-    dtype = torch.float32
+    # dtype = torch.float32
+    dtype = torch.float64
     
     A, B, D = build_inputs(Gq, Gt)
 
@@ -193,6 +117,9 @@ def train_with_adam(
     V = torch.nn.Parameter(torch.rand((n, embed_dim), device=device, dtype=dtype))
     W = torch.nn.Parameter(torch.rand((n, embed_dim), device=device, dtype=dtype))
 
+    # V = torch.nn.Parameter(V / V.norm(dim=1, keepdim=True))
+    # W = torch.nn.Parameter(W / W.norm(dim=1, keepdim=True))
+
     optimizer = torch.optim.Adam([V, W], lr=learning_rate)
     history = []
 
@@ -200,7 +127,7 @@ def train_with_adam(
     best_V = V.detach().clone()
     best_W = W.detach().clone()
     wait = 0
-    patience = 50
+    patience = 1000
     min_delta = 1e-4
 
     for step in range(max_iter):
@@ -215,12 +142,8 @@ def train_with_adam(
 
         history.append(float(loss.detach()))
 
-        P_np = P.detach().cpu().numpy()
-        row_ind, col_ind = scipy.optimize.linear_sum_assignment(P_np, maximize=True)
-
-        cnt = np.sum(row_ind == col_ind)
-
         loss_value = float(loss.detach())
+        # print(step, loss_value)
 
         if loss_value < best_loss - min_delta:
             best_loss = loss_value
@@ -231,17 +154,32 @@ def train_with_adam(
             wait += 1
 
         if step % 1000 == 0 or step == max_iter - 1:
+            
+            P_np = P.detach().cpu().numpy()
+            row_ind, col_ind = scipy.optimize.linear_sum_assignment(P_np, maximize=True)
+
+            # cnt = np.sum(row_ind == col_ind)
+            cnt = 0
+
+            for rol, col in zip(row_ind, col_ind):
+                gt = ground_truth.get(int(rol))
+                if gt is not None and gt == int(col):
+                    cnt += 1
+
+            # for acm-dblp
+            acc_hungarian = cnt / data.shape[0]
+            
             print(
                 f"step={step} "
                 f"loss={float(loss.detach()):.6f} "
                 f"structure={float(structure_term.detach()):.6f} "
                 f"feature={float(feature_term.detach()):.6f} "
                 f"penalty={float(constraint_term.detach()):.6f} "
-                f"accuracy={cnt / n:.4f}"
+                f"accuracy={acc_hungarian:.4f}"
             )
 
         if wait >= patience:
-            print(f"Early stopping at step={step}, best_loss={best_loss:.6f}, accuracy={cnt / n:.4f}")
+            print(f"Early stopping at step={step}, best_loss={best_loss:.6f}, accuracy={acc_hungarian:.4f}")
             break
 
     P_final = make_soft_matching(best_V, best_W, beta=beta).detach()
@@ -273,109 +211,121 @@ if __name__ == "__main__":
     use_GPU = True
     learning_rate = 1e-2
     max_iter = 30000
-    m_list = [10,20,30]
+    m_list = [600]
     beta_list = [10]
     row_penalty_list = [10]
     col_penalty_list = [200]
-    mu = 0.5  # weight for the feature term in the loss function
+    mu = 0.1  # weight for the feature term in the loss function
 
 
-    # output_file = "grid_search_results.csv"
 
-    # with open(output_file, "w", newline="") as f:
-    #     writer = csv.DictWriter(
-    #         f,
-    #         fieldnames=[
-    #             "embed_dim",
-    #             "beta",
-    #             "row_penalty",
-    #             "col_penalty",
-    #             "rows_close_to_1",
-    #             "cols_close_to_1",
-    #             "row_max_abs_diff",
-    #             "row_mean_abs_diff",
-    #             "col_max_abs_diff",
-    #             "col_mean_abs_diff",
-    #             "num_correct_matches",
-    #             "accuracy",
-    #             "final_loss",
-    #         ],
-    #     )
-    #     writer.writeheader()
+    output_file = "grid_search_results-ACM-DBLP-4.csv"
 
-
-    Gq, Gt, n = read_file()
-
-    for m in m_list:
-        for beta in beta_list:
-            for row_penalty in row_penalty_list:
-                for col_penalty in col_penalty_list:
-                    print(f"embed_dim={m} beta={beta} row_penalty={row_penalty} col_penalty={col_penalty}")
-                    
-                    P_final, V_final, W_final, history = train_with_adam(
-                        Gq,
-                        Gt,
-                        embed_dim=m,
-                        beta=beta,
-                        mu=mu,
-                        row_penalty=row_penalty,
-                        col_penalty=col_penalty,
-                        learning_rate=learning_rate,
-                        max_iter=max_iter,
-                        use_GPU=use_GPU)
-                    
-                    P_final_np = P_final.cpu().numpy()
-
-                    row_sums = np.sum(P_final_np, axis=1)
-                    col_sums = np.sum(P_final_np, axis=0)
-
-                    rows_close_to_1 = np.allclose(row_sums, 1.0, atol=1e-2)
-                    cols_close_to_1 = np.allclose(col_sums, 1.0, atol=1e-2)
-
-                    row_diff = row_sums - 1.0
-                    col_diff = col_sums - 1.0
-
-                    row_max_abs_diff = np.max(np.abs(row_diff))
-                    row_mean_abs_diff = np.mean(np.abs(row_diff))
-                    col_max_abs_diff = np.max(np.abs(col_diff))
-                    col_mean_abs_diff = np.mean(np.abs(col_diff))
-                    
-                    cnt = 0
-                    row_ind, col_ind = scipy.optimize.linear_sum_assignment(P_final_np, maximize=True)
-
-                    cnt = np.sum(row_ind == col_ind)
-                    acc_hungarian = cnt / n
-
-                    matched_cols = set()
-                    match = -np.ones(n, dtype=int)
-
-                    for i in range(n):
-                        row = P_final_np[i]
-                        candidates = np.argsort(-row)  # 从大到小排序
-                        for j in candidates:
-                            if j not in matched_cols:
-                                match[i] = j
-                                matched_cols.add(j)
-                                break
-                    acc_greedy = np.sum(match == np.arange(n)) / n
-                    print("acc_greedy:", acc_greedy)
+    with open(output_file, "w", newline="") as f:
+        writer = csv.DictWriter(
+            f,
+            fieldnames=[
+                "embed_dim",
+                "beta",
+                "row_penalty",
+                "col_penalty",
+                "rows_close_to_1",
+                "cols_close_to_1",
+                "row_max_abs_diff",
+                "row_mean_abs_diff",
+                "col_max_abs_diff",
+                "col_mean_abs_diff",
+                "num_correct_matches",
+                "accuracy",
+                "final_loss",
+            ],
+        )
+        writer.writeheader()
 
 
-    #                     writer.writerow({
-    #                         "embed_dim": m,
-    #                         "beta": beta,
-    #                         "row_penalty": row_penalty,
-    #                         "col_penalty": col_penalty,
-    #                         "rows_close_to_1": rows_close_to_1,
-    #                         "cols_close_to_1": cols_close_to_1,
-    #                         "row_max_abs_diff": row_max_abs_diff,
-    #                         "row_mean_abs_diff": row_mean_abs_diff,
-    #                         "col_max_abs_diff": col_max_abs_diff,
-    #                         "col_mean_abs_diff": col_mean_abs_diff,
-    #                         "num_correct_matches": int(cnt),
-    #                         "accuracy": float(acc),
-    #                         "final_loss": float(history[-1]),
-    #                     })
-    #                     f.flush()
+        Gq, Gt, n = read_file()
 
-    # print(f"Saved results to {output_file}")
+
+        for m in m_list:
+            for beta in beta_list:
+                for row_penalty in row_penalty_list:
+                    for col_penalty in col_penalty_list:
+                        print(f"embed_dim={m} beta={beta} row_penalty={row_penalty} col_penalty={col_penalty}")
+                        
+                        P_final, V_final, W_final, history = train_with_adam(
+                            Gq,
+                            Gt,
+                            embed_dim=m,
+                            beta=beta,
+                            mu=mu,
+                            row_penalty=row_penalty,
+                            col_penalty=col_penalty,
+                            learning_rate=learning_rate,
+                            max_iter=max_iter,
+                            use_GPU=use_GPU)
+                        
+                        P_final_np = P_final.cpu().numpy()
+
+                        row_sums = np.sum(P_final_np, axis=1)
+                        col_sums = np.sum(P_final_np, axis=0)
+
+                        rows_close_to_1 = np.allclose(row_sums, 1.0, atol=1e-2)
+                        cols_close_to_1 = np.allclose(col_sums, 1.0, atol=1e-2)
+
+                        row_diff = row_sums - 1.0
+                        col_diff = col_sums - 1.0
+
+                        row_max_abs_diff = np.max(np.abs(row_diff))
+                        row_mean_abs_diff = np.mean(np.abs(row_diff))
+                        col_max_abs_diff = np.max(np.abs(col_diff))
+                        col_mean_abs_diff = np.mean(np.abs(col_diff))
+                        
+                        cnt = 0
+                        row_ind, col_ind = scipy.optimize.linear_sum_assignment(P_final_np, maximize=True)
+
+                        for rol, col in zip(row_ind, col_ind):
+                            gt = ground_truth.get(int(rol))
+                            if gt is not None and gt == int(col):
+                                cnt += 1
+
+                        # for acm-dblp
+                        acc_hungarian = cnt / data.shape[0]
+
+
+                        # for others
+                        # cnt = np.sum(row_ind == col_ind)
+                        # acc_hungarian = cnt / n
+
+                        # matched_cols = set()
+                        # match = -np.ones(n, dtype=int)
+
+                        # for i in range(n):
+                        #     row = P_final_np[i]
+                        #     candidates = np.argsort(-row)  # 从大到小排序
+                        #     for j in candidates:
+                        #         if j not in matched_cols:
+                        #             match[i] = j
+                        #             matched_cols.add(j)
+                        #             break
+                        # acc_greedy = np.sum(match == np.arange(n)) / n
+                        # print("acc_greedy:", acc_greedy)
+
+
+                        writer.writerow({
+                            "embed_dim": m,
+                            "beta": beta,
+                            "row_penalty": row_penalty,
+                            "col_penalty": col_penalty,
+                            "rows_close_to_1": rows_close_to_1,
+                            "cols_close_to_1": cols_close_to_1,
+                            "row_max_abs_diff": row_max_abs_diff,
+                            "row_mean_abs_diff": row_mean_abs_diff,
+                            "col_max_abs_diff": col_max_abs_diff,
+                            "col_mean_abs_diff": col_mean_abs_diff,
+                            "num_correct_matches": int(cnt),
+                            "accuracy": float(acc_hungarian),
+                            "final_loss": float(history[-1]),
+                        })
+                        f.flush()
+
+        print(f"Saved results to {output_file}")

@@ -1,0 +1,2 @@
+embed_dim,beta,row_penalty,col_penalty,rows_close_to_1,cols_close_to_1,row_max_abs_diff,row_mean_abs_diff,col_max_abs_diff,col_mean_abs_diff,num_correct_matches,accuracy,final_loss
+600,10,10,200,True,False,1.1102230246251565e-15,7.754542828311653e-17,0.11008774769720442,0.0053281607305860025,1498,0.23683794466403163,-24060.292464647242
