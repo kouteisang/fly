@@ -1,0 +1,5 @@
+1. Attention implementation
+https://medium.com/data-science/linearizing-attention-204d3b86cc1e
+https://arxiv.org/pdf/2602.01744
+
+2. Compate L-BFGS with Adam
