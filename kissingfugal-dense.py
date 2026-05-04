@@ -5,6 +5,7 @@ from helpers.pred import feature_extraction, convertToPermHungarian
 import scipy
 import csv
 import itertools
+import time
 
 # path = "/home/cheng/Fugal/data/real_noise/ACM-DBLP/pos_pairs.npy"
 # data = np.load(path)
@@ -89,7 +90,104 @@ def fugal_loss_terms(
     loss = structure_term + feature_term + constraint_term
     return loss, structure_term, feature_term, constraint_term
 
+
 def train_with_adam(
+    Gq: nx.Graph,
+    Gt: nx.Graph,
+    embed_dim: int = 30,
+    beta: float = 10.0,
+    mu: float = 1.0,
+    row_penalty: float = 10.0,
+    col_penalty: float = 10.0,
+    learning_rate: float = 1e-2,
+    max_iter: int = 10000,
+    use_GPU: bool = True,
+):
+    n = Gq.number_of_nodes()
+    if Gt.number_of_nodes() != n:
+        raise ValueError("This prototype assumes Gq and Gt have the same number of nodes.")
+    
+    device = torch.device("cuda" if use_GPU and torch.cuda.is_available() else "cpu")
+    # dtype = torch.float32
+    dtype = torch.float32
+    
+    A, B, D = build_inputs(Gq, Gt)
+
+    A = A.to(device,dtype=dtype)
+    B = B.to(device,dtype=dtype)
+    D = D.to(device,dtype=dtype)
+    V = torch.nn.Parameter(torch.rand((n, embed_dim), device=device, dtype=dtype))
+    W = torch.nn.Parameter(torch.rand((n, embed_dim), device=device, dtype=dtype))
+
+    # V = torch.nn.Parameter(V / V.norm(dim=1, keepdim=True))
+    # W = torch.nn.Parameter(W / W.norm(dim=1, keepdim=True))
+
+    optimizer = torch.optim.Adam([V, W], lr=learning_rate)
+    history = []
+
+    best_loss = float("inf")
+    best_V = V.detach().clone()
+    best_W = W.detach().clone()
+    wait = 0
+    patience = max_iter
+    min_delta = 1e-4
+
+    start_time = time.time()
+
+    for step in range(max_iter):
+        P = make_soft_matching(V, W, beta=beta)
+        loss, structure_term, feature_term, constraint_term = fugal_loss_terms(
+            A, B, D, P, mu=mu, row_penalty=row_penalty, col_penalty=col_penalty
+        )
+
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+        history.append(float(loss.detach()))
+
+        loss_value = float(loss.detach())
+        # print(step, loss_value)
+
+        if loss_value < best_loss - min_delta:
+            best_loss = loss_value
+            best_V = V.detach().clone()
+            best_W = W.detach().clone()
+            wait = 0
+        else:
+            wait += 1
+
+        # if step % 1000 == 0 or step == max_iter - 1:
+            
+        #     P_np = P.detach().cpu().numpy()
+        #     row_ind, col_ind = scipy.optimize.linear_sum_assignment(P_np, maximize=True)
+
+        #     cnt = np.sum(row_ind == col_ind)
+
+        #     # for acm-dblp
+        #     acc_hungarian = cnt / n
+            
+        #     print(
+        #         f"step={step} "
+        #         f"loss={float(loss.detach()):.6f} "
+        #         f"structure={float(structure_term.detach()):.6f} "
+        #         f"feature={float(feature_term.detach()):.6f} "
+        #         f"penalty={float(constraint_term.detach()):.6f} "
+        #         f"accuracy={acc_hungarian:.4f}"
+        #     )
+
+        if wait >= patience:
+            print(f"Early stopping at step={step}, best_loss={best_loss:.6f}, accuracy={acc_hungarian:.4f}")
+            break
+    
+    time_taken = time.time() - start_time
+    print(f"Time taken for training with Adam: {time_taken:.2f} seconds")
+
+    P_final = make_soft_matching(best_V, best_W, beta=beta).detach()
+    return P_final, best_V, best_W, history
+
+
+def train_with_LBFGS(
     Gq: nx.Graph,
     Gt: nx.Graph,
     embed_dim: int = 30,
@@ -117,64 +215,66 @@ def train_with_adam(
     V = torch.nn.Parameter(torch.rand((n, embed_dim), device=device, dtype=dtype))
     W = torch.nn.Parameter(torch.rand((n, embed_dim), device=device, dtype=dtype))
 
-    # V = torch.nn.Parameter(V / V.norm(dim=1, keepdim=True))
-    # W = torch.nn.Parameter(W / W.norm(dim=1, keepdim=True))
-
-    optimizer = torch.optim.Adam([V, W], lr=learning_rate)
+    
+    optimizer = torch.optim.LBFGS([V, W], lr=learning_rate, max_iter=20, line_search_fn="strong_wolfe", history_size=20)
     history = []
 
     best_loss = float("inf")
     best_V = V.detach().clone()
     best_W = W.detach().clone()
-    wait = 0
-    patience = 1000
-    min_delta = 1e-4
 
-    for step in range(max_iter):
-        P = make_soft_matching(V, W, beta=beta)
-        loss, structure_term, feature_term, constraint_term = fugal_loss_terms(
-            A, B, D, P, mu=mu, row_penalty=row_penalty, col_penalty=col_penalty
-        )
+    if device.type == "cuda":
+        torch.cuda.synchronize()
+    start_time = time.time()
 
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-
+    for step in range(500):
+   
+        def closure():
+            optimizer.zero_grad()
+            P = make_soft_matching(V, W, beta=beta)
+            closure_loss, _, _, _ = fugal_loss_terms(
+                A, B, D, P, mu=mu, row_penalty=row_penalty, col_penalty=col_penalty
+            )
+            closure_loss.backward()
+            return closure_loss
+    
+        optimizer.step(closure)
+        with torch.no_grad():
+            P = make_soft_matching(V, W, beta=beta)
+            loss, structure_term, feature_term, constraint_term = fugal_loss_terms(
+                A, B, D, P, mu=mu, row_penalty=row_penalty, col_penalty=col_penalty
+            )
         history.append(float(loss.detach()))
-
         loss_value = float(loss.detach())
-        # print(step, loss_value)
 
-        if loss_value < best_loss - min_delta:
+        if loss_value < best_loss:
             best_loss = loss_value
             best_V = V.detach().clone()
             best_W = W.detach().clone()
-            wait = 0
-        else:
-            wait += 1
 
-        if step % 1000 == 0 or step == max_iter - 1:
+        # if step % 1000 == 0 or step == max_iter - 1:
             
-            P_np = P.detach().cpu().numpy()
-            row_ind, col_ind = scipy.optimize.linear_sum_assignment(P_np, maximize=True)
+        #     P_np = P.detach().cpu().numpy()
+        #     row_ind, col_ind = scipy.optimize.linear_sum_assignment(P_np, maximize=True)
 
-            cnt = np.sum(row_ind == col_ind)
+        #     cnt = np.sum(row_ind == col_ind)
 
-            # for acm-dblp
-            acc_hungarian = cnt / n
+        #     # for acm-dblp
+        #     acc_hungarian = cnt / n
             
-            print(
-                f"step={step} "
-                f"loss={float(loss.detach()):.6f} "
-                f"structure={float(structure_term.detach()):.6f} "
-                f"feature={float(feature_term.detach()):.6f} "
-                f"penalty={float(constraint_term.detach()):.6f} "
-                f"accuracy={acc_hungarian:.4f}"
-            )
+        #     print(
+        #         f"step={step} "
+        #         f"loss={float(loss.detach()):.6f} "
+        #         f"structure={float(structure_term.detach()):.6f} "
+        #         f"feature={float(feature_term.detach()):.6f} "
+        #         f"penalty={float(constraint_term.detach()):.6f} "
+        #         f"accuracy={acc_hungarian:.4f}"
+        #     )
 
-        if wait >= patience:
-            print(f"Early stopping at step={step}, best_loss={best_loss:.6f}, accuracy={acc_hungarian:.4f}")
-            break
+    if device.type == "cuda":
+        torch.cuda.synchronize()
+    time_taken = time.time() - start_time
+    print(f"Time taken for {max_iter} LBFGS epochs: {time_taken:.2f} seconds")
 
     P_final = make_soft_matching(best_V, best_W, beta=beta).detach()
     return P_final, best_V, best_W, history
@@ -204,7 +304,7 @@ if __name__ == "__main__":
     
     use_GPU = True
     learning_rate = 1e-2
-    max_iter = 20000
+    max_iter = 10000
     m_list = [100]
     beta_list = [10]
     row_penalty_list = [10]
@@ -246,7 +346,7 @@ if __name__ == "__main__":
                 for col_penalty in col_penalty_list:
                     print(f"embed_dim={m} beta={beta} row_penalty={row_penalty} col_penalty={col_penalty}")
                     
-                    P_final, V_final, W_final, history = train_with_adam(
+                    P_final, V_final, W_final, history = train_with_LBFGS(
                         Gq,
                         Gt,
                         embed_dim=m,
@@ -257,6 +357,18 @@ if __name__ == "__main__":
                         learning_rate=learning_rate,
                         max_iter=max_iter,
                         use_GPU=use_GPU)
+
+                    # P_final, V_final, W_final, history = train_with_adam(
+                    #     Gq,
+                    #     Gt,
+                    #     embed_dim=m,
+                    #     beta=beta,
+                    #     mu=mu,
+                    #     row_penalty=row_penalty,
+                    #     col_penalty=col_penalty,
+                    #     learning_rate=learning_rate,
+                    #     max_iter=max_iter,
+                    #     use_GPU=use_GPU)
                     
                     P_final_np = P_final.cpu().numpy()
 
