@@ -6,17 +6,17 @@ import scipy
 import csv
 import itertools
 
-path = "/home/cheng/Fugal/data/real_noise/ACM-DBLP/pos_pairs.npy"
-data = np.load(path)
-ground_truth = {pair[0]: pair[1] for pair in data}
-# print("Ground truth mapping: ", ground_truth)
+# path = "/home/cheng/Fugal/data/real_noise/ACM-DBLP/pos_pairs.npy"
+# data = np.load(path)
+# ground_truth = {pair[0]: pair[1] for pair in data}
+# # print("Ground truth mapping: ", ground_truth)
 
 
 def read_file():
-    query_path = "/home/cheng/fly/data/real_noise/ACM-DBLP/ACM.txt"
-    target_path = "/home/cheng/fly/data/real_noise/ACM-DBLP/DBLP.txt"
+    query_path = "/home/cheng/fly/data/real_noise/MultiMagna/yeast0_Y2H1.txt"
+    target_path = "/home/cheng/fly/data/real_noise/MultiMagna/yeast5_Y2H1.txt"
 
-    n = 9916
+    n = 1004
     Gq = nx.Graph()
     Gt = nx.Graph()
 
@@ -107,7 +107,7 @@ def train_with_adam(
     
     device = torch.device("cuda" if use_GPU else "cpu")
     # dtype = torch.float32
-    dtype = torch.float64
+    dtype = torch.float32
     
     A, B, D = build_inputs(Gq, Gt)
 
@@ -158,16 +158,10 @@ def train_with_adam(
             P_np = P.detach().cpu().numpy()
             row_ind, col_ind = scipy.optimize.linear_sum_assignment(P_np, maximize=True)
 
-            # cnt = np.sum(row_ind == col_ind)
-            cnt = 0
-
-            for rol, col in zip(row_ind, col_ind):
-                gt = ground_truth.get(int(rol))
-                if gt is not None and gt == int(col):
-                    cnt += 1
+            cnt = np.sum(row_ind == col_ind)
 
             # for acm-dblp
-            acc_hungarian = cnt / data.shape[0]
+            acc_hungarian = cnt / n
             
             print(
                 f"step={step} "
@@ -210,8 +204,8 @@ if __name__ == "__main__":
     
     use_GPU = True
     learning_rate = 1e-2
-    max_iter = 30000
-    m_list = [600]
+    max_iter = 20000
+    m_list = [100]
     beta_list = [10]
     row_penalty_list = [10]
     col_penalty_list = [200]
@@ -219,113 +213,107 @@ if __name__ == "__main__":
 
 
 
-    output_file = "grid_search_results-ACM-DBLP-4.csv"
+    # output_file = "grid_search_results-ACM-DBLP-4.csv"
 
-    with open(output_file, "w", newline="") as f:
-        writer = csv.DictWriter(
-            f,
-            fieldnames=[
-                "embed_dim",
-                "beta",
-                "row_penalty",
-                "col_penalty",
-                "rows_close_to_1",
-                "cols_close_to_1",
-                "row_max_abs_diff",
-                "row_mean_abs_diff",
-                "col_max_abs_diff",
-                "col_mean_abs_diff",
-                "num_correct_matches",
-                "accuracy",
-                "final_loss",
-            ],
-        )
-        writer.writeheader()
-
-
-        Gq, Gt, n = read_file()
+    # with open(output_file, "w", newline="") as f:
+    #     writer = csv.DictWriter(
+    #         f,
+    #         fieldnames=[
+    #             "embed_dim",
+    #             "beta",
+    #             "row_penalty",
+    #             "col_penalty",
+    #             "rows_close_to_1",
+    #             "cols_close_to_1",
+    #             "row_max_abs_diff",
+    #             "row_mean_abs_diff",
+    #             "col_max_abs_diff",
+    #             "col_mean_abs_diff",
+    #             "num_correct_matches",
+    #             "accuracy",
+    #             "final_loss",
+    #         ],
+    #     )
+    #     writer.writeheader()
 
 
-        for m in m_list:
-            for beta in beta_list:
-                for row_penalty in row_penalty_list:
-                    for col_penalty in col_penalty_list:
-                        print(f"embed_dim={m} beta={beta} row_penalty={row_penalty} col_penalty={col_penalty}")
-                        
-                        P_final, V_final, W_final, history = train_with_adam(
-                            Gq,
-                            Gt,
-                            embed_dim=m,
-                            beta=beta,
-                            mu=mu,
-                            row_penalty=row_penalty,
-                            col_penalty=col_penalty,
-                            learning_rate=learning_rate,
-                            max_iter=max_iter,
-                            use_GPU=use_GPU)
-                        
-                        P_final_np = P_final.cpu().numpy()
-
-                        row_sums = np.sum(P_final_np, axis=1)
-                        col_sums = np.sum(P_final_np, axis=0)
-
-                        rows_close_to_1 = np.allclose(row_sums, 1.0, atol=1e-2)
-                        cols_close_to_1 = np.allclose(col_sums, 1.0, atol=1e-2)
-
-                        row_diff = row_sums - 1.0
-                        col_diff = col_sums - 1.0
-
-                        row_max_abs_diff = np.max(np.abs(row_diff))
-                        row_mean_abs_diff = np.mean(np.abs(row_diff))
-                        col_max_abs_diff = np.max(np.abs(col_diff))
-                        col_mean_abs_diff = np.mean(np.abs(col_diff))
-                        
-                        cnt = 0
-                        row_ind, col_ind = scipy.optimize.linear_sum_assignment(P_final_np, maximize=True)
-
-                        for rol, col in zip(row_ind, col_ind):
-                            gt = ground_truth.get(int(rol))
-                            if gt is not None and gt == int(col):
-                                cnt += 1
-
-                        # for acm-dblp
-                        acc_hungarian = cnt / data.shape[0]
+    Gq, Gt, n = read_file()
 
 
-                        # for others
-                        # cnt = np.sum(row_ind == col_ind)
-                        # acc_hungarian = cnt / n
+    for m in m_list:
+        for beta in beta_list:
+            for row_penalty in row_penalty_list:
+                for col_penalty in col_penalty_list:
+                    print(f"embed_dim={m} beta={beta} row_penalty={row_penalty} col_penalty={col_penalty}")
+                    
+                    P_final, V_final, W_final, history = train_with_adam(
+                        Gq,
+                        Gt,
+                        embed_dim=m,
+                        beta=beta,
+                        mu=mu,
+                        row_penalty=row_penalty,
+                        col_penalty=col_penalty,
+                        learning_rate=learning_rate,
+                        max_iter=max_iter,
+                        use_GPU=use_GPU)
+                    
+                    P_final_np = P_final.cpu().numpy()
 
-                        # matched_cols = set()
-                        # match = -np.ones(n, dtype=int)
+                    row_sums = np.sum(P_final_np, axis=1)
+                    col_sums = np.sum(P_final_np, axis=0)
 
-                        # for i in range(n):
-                        #     row = P_final_np[i]
-                        #     candidates = np.argsort(-row)  # 从大到小排序
-                        #     for j in candidates:
-                        #         if j not in matched_cols:
-                        #             match[i] = j
-                        #             matched_cols.add(j)
-                        #             break
-                        # acc_greedy = np.sum(match == np.arange(n)) / n
-                        # print("acc_greedy:", acc_greedy)
+                    rows_close_to_1 = np.allclose(row_sums, 1.0, atol=1e-2)
+                    cols_close_to_1 = np.allclose(col_sums, 1.0, atol=1e-2)
+
+                    row_diff = row_sums - 1.0
+                    col_diff = col_sums - 1.0
+
+                    row_max_abs_diff = np.max(np.abs(row_diff))
+                    row_mean_abs_diff = np.mean(np.abs(row_diff))
+                    col_max_abs_diff = np.max(np.abs(col_diff))
+                    col_mean_abs_diff = np.mean(np.abs(col_diff))
+                    
+                    cnt = 0
+                    row_ind, col_ind = scipy.optimize.linear_sum_assignment(P_final_np, maximize=True)
 
 
-                        writer.writerow({
-                            "embed_dim": m,
-                            "beta": beta,
-                            "row_penalty": row_penalty,
-                            "col_penalty": col_penalty,
-                            "rows_close_to_1": rows_close_to_1,
-                            "cols_close_to_1": cols_close_to_1,
-                            "row_max_abs_diff": row_max_abs_diff,
-                            "row_mean_abs_diff": row_mean_abs_diff,
-                            "col_max_abs_diff": col_max_abs_diff,
-                            "col_mean_abs_diff": col_mean_abs_diff,
-                            "num_correct_matches": int(cnt),
-                            "accuracy": float(acc_hungarian),
-                            "final_loss": float(history[-1]),
-                        })
-                        f.flush()
 
-        print(f"Saved results to {output_file}")
+                    cnt = np.sum(row_ind == col_ind)
+                    acc_hungarian = cnt / n
+
+                    print("acc_hungarian:", acc_hungarian)
+
+                    matched_cols = set()
+                    match = -np.ones(n, dtype=int)
+
+                    for i in range(n):
+                        row = P_final_np[i]
+                        candidates = np.argsort(-row)  # 从大到小排序
+                        for j in candidates:
+                            if j not in matched_cols:
+                                match[i] = j
+                                matched_cols.add(j)
+                                break
+                    acc_greedy = np.sum(match == np.arange(n)) / n
+                    print("acc_greedy:", acc_greedy)
+
+
+        #                 writer.writerow({
+        #                     "embed_dim": m,
+        #                     "beta": beta,
+        #                     "row_penalty": row_penalty,
+        #                     "col_penalty": col_penalty,
+        #                     "rows_close_to_1": rows_close_to_1,
+        #                     "cols_close_to_1": cols_close_to_1,
+        #                     "row_max_abs_diff": row_max_abs_diff,
+        #                     "row_mean_abs_diff": row_mean_abs_diff,
+        #                     "col_max_abs_diff": col_max_abs_diff,
+        #                     "col_mean_abs_diff": col_mean_abs_diff,
+        #                     "num_correct_matches": int(cnt),
+        #                     "accuracy": float(acc_hungarian),
+        #                     "final_loss": float(history[-1]),
+        #                 })
+        #                 f.flush()
+
+        # print(f"Saved results to {output_file}")

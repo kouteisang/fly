@@ -4,11 +4,17 @@ import numpy as np
 from helpers.pred import feature_extraction
 import scipy
 
-def read_file():
-    query_path = "/home/cheng/fly/data/real_noise/MultiMagna/yeast0_Y2H1.txt"
-    target_path = "/home/cheng/fly/data/real_noise/MultiMagna/yeast5_Y2H1.txt"
 
-    n = 1004
+path = "/home/cheng/Fugal/data/real_noise/ACM-DBLP/pos_pairs.npy"
+data = np.load(path)
+ground_truth = {pair[0]: pair[1] for pair in data}
+
+
+def read_file():
+    query_path = "/home/cheng/fly/data/real_noise/ACM-DBLP/ACM.txt"
+    target_path = "/home/cheng/fly/data/real_noise/ACM-DBLP/DBLP.txt"
+
+    n = 9916
     Gq = nx.Graph()
     Gt = nx.Graph()
 
@@ -21,8 +27,8 @@ def read_file():
         for line in f:
             u, v = map(int, line.strip().split())
             Gq.add_edge(u, v)
-            
-    with open(target_path) as f:        
+
+    with open(target_path) as f:
         for line in f:
             u, v = map(int, line.strip().split())
             Gt.add_edge(u, v)
@@ -110,6 +116,41 @@ def greedy_match_from_candidates(candidate_cols, probs):
                 break
 
     return match
+
+
+def ground_truth_accuracy(match):
+    cnt = 0
+    for row, col in enumerate(match):
+        gt = ground_truth.get(int(row))
+        if gt is not None and gt == int(col):
+            cnt += 1
+    return cnt / data.shape[0], cnt
+
+
+def hungarian_accuracy(P_np):
+    row_ind, col_ind = scipy.optimize.linear_sum_assignment(P_np, maximize=True)
+    cnt = 0
+    for row, col in zip(row_ind, col_ind):
+        gt = ground_truth.get(int(row))
+        if gt is not None and gt == int(col):
+            cnt += 1
+    return cnt / data.shape[0], cnt
+
+
+def candidate_ground_truth_recall(candidate_pool):
+    """统计 ground truth target 是否出现在每个 source row 的候选集合中。"""
+    hits = 0
+    total = 0
+    for row, col in ground_truth.items():
+        if row >= candidate_pool.shape[0]:
+            continue
+        total += 1
+        if torch.any(candidate_pool[int(row)] == int(col)):
+            hits += 1
+
+    if total == 0:
+        return 0.0
+    return hits / total
 
 
 def build_dense_edge_mask(B, n):
@@ -219,6 +260,7 @@ def sparse_candidate_graph_matching_loss(
     loss = structure_term + feature_term + constraint_term
     return loss, structure_term, feature_term, constraint_term
 
+
 def train_with_adam(
     Gq: nx.Graph,
     Gt: nx.Graph,
@@ -237,29 +279,27 @@ def train_with_adam(
     n = Gq.number_of_nodes()
     if Gt.number_of_nodes() != n:
         raise ValueError("This prototype assumes Gq and Gt have the same number of nodes.")
-    
+
     device = torch.device("cuda" if use_GPU and torch.cuda.is_available() else "cpu")
     dtype = torch.float32
-    
+
     F1 = feature_extraction(Gq)
     F2 = feature_extraction(Gt)
     candidate_pool = build_distance_candidate_pool(
         F1, F2, candidate_k, device=device, dtype=dtype, block_size=candidate_block_size
     )
-    identity_recall = torch.mean(
-        (candidate_pool == torch.arange(n, device=device)[:, None]).any(dim=1).float()
-    )
+    gt_recall = candidate_ground_truth_recall(candidate_pool)
     print(
         f"candidate_pool: top_k={candidate_pool.shape[1]} "
         f"random_r={min(sample_r, max(n - candidate_pool.shape[1], 0))} "
-        f"identity_recall={float(identity_recall):.4f}"
+        f"gt_recall={gt_recall:.4f}"
     )
 
     A = nx_to_torch_sparse(Gq, n)
     B = nx_to_torch_sparse(Gt, n)
 
-    A = A.to(device,dtype=dtype)
-    B = B.to(device,dtype=dtype)
+    A = A.to(device, dtype=dtype)
+    B = B.to(device, dtype=dtype)
     A_edge_index = A.indices()
     B_edge_mask = build_dense_edge_mask(B, n)
     F1 = torch.tensor(F1, device=device, dtype=dtype)
@@ -318,20 +358,20 @@ def train_with_adam(
 
         if step % 1000 == 0 or step == max_iter - 1:
             match = greedy_match_from_candidates(candidate_cols, probs)
-            cnt = np.sum(match == np.arange(n))
+            acc_greedy, cnt = ground_truth_accuracy(match)
             print(
                 f"step={step} "
                 f"loss={float(loss.detach()):.6f} "
                 f"structure={float(structure_term.detach()):.6f} "
                 f"feature={float(feature_term.detach()):.6f} "
                 f"penalty={float(constraint_term.detach()):.6f} "
-                f"accuracy={cnt / n:.4f}"
+                f"accuracy={acc_greedy:.4f}"
             )
 
         if wait >= patience:
             match = greedy_match_from_candidates(candidate_cols, probs)
-            cnt = np.sum(match == np.arange(n))
-            print(f"Early stopping at step={step}, best_loss={best_loss:.6f}, accuracy={cnt / n:.4f}")
+            acc_greedy, cnt = ground_truth_accuracy(match)
+            print(f"Early stopping at step={step}, best_loss={best_loss:.6f}, accuracy={acc_greedy:.4f}")
             break
 
     final_candidate_cols = sample_candidate_columns(candidate_pool, sample_r, n)
@@ -341,9 +381,10 @@ def train_with_adam(
     P_final = (final_candidate_cols.detach(), final_probs.detach())
     return P_final, best_V, best_W, history
 
+
 def nx_to_torch_sparse(G, n):
     # 1. 转成 scipy 稀疏矩阵（COO）
-    A = nx.to_scipy_sparse_array(G, nodelist=range(n), format='coo')
+    A = nx.to_scipy_sparse_array(G, nodelist=range(n), format="coo")
 
     # 2. 转成 PyTorch sparse
     indices = torch.tensor(np.vstack((A.row, A.col)), dtype=torch.long)
@@ -353,36 +394,26 @@ def nx_to_torch_sparse(G, n):
         A_torch = torch.sparse_coo_tensor(indices, values, size=(n, n))
     return A_torch.coalesce()   # 很重要
 
+
 if __name__ == "__main__":
-    
-    # ## hyperparameters
-
-    # m = 200
-
-    # beta = 20.0 # controls the sharpness of the soft matching
-    # col_penalty = 100.0 # penalty weight for doubly stochastic constraint
-    # max_iter = 50000 # iterations for training
-    # ## hyperparameters
-    
     use_GPU = True
     learning_rate = 1e-2
-    max_iter = 30000
-    m_list = [100]
+    max_iter = 10000
+    m_list = [1000]
     beta_list = [10]
     col_penalty_list = [200]
-    candidate_k = 100
+    candidate_k = 2000
     sample_r = 0
     structure_chunk_size = 32
     mu = 0.1  # weight for the feature term in the loss function
 
     Gq, Gt, n = read_file()
 
-
     for m in m_list:
         for beta in beta_list:
             for col_penalty in col_penalty_list:
                 print(f"embed_dim={m} beta={beta} col_penalty={col_penalty}")
-                    
+
                 P_final, V_final, W_final, history = train_with_adam(
                     Gq,
                     Gt,
@@ -395,8 +426,9 @@ if __name__ == "__main__":
                     use_GPU=use_GPU,
                     candidate_k=candidate_k,
                     sample_r=sample_r,
-                    structure_chunk_size=structure_chunk_size)
-                    
+                    structure_chunk_size=structure_chunk_size,
+                )
+
                 candidate_cols, final_probs = P_final
                 candidate_cols_np = candidate_cols.cpu().numpy()
                 final_probs_np = final_probs.cpu().numpy()
@@ -407,12 +439,9 @@ if __name__ == "__main__":
                         np.repeat(np.arange(n), candidate_cols_np.shape[1]),
                         candidate_cols_np.reshape(-1),
                     ] = final_probs_np.reshape(-1)
-                    row_ind, col_ind = scipy.optimize.linear_sum_assignment(
-                        P_final_np, maximize=True
-                    )
-                    acc_hungarian = np.sum(row_ind == col_ind) / n
+                    acc_hungarian, cnt = hungarian_accuracy(P_final_np)
                     print("acc_hungarian:", acc_hungarian)
                 else:
                     match = greedy_match_from_candidates(candidate_cols, final_probs)
-                    acc_greedy = np.sum(match == np.arange(n)) / n
+                    acc_greedy, cnt = ground_truth_accuracy(match)
                     print("acc_greedy:", acc_greedy)
