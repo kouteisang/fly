@@ -14,6 +14,50 @@ import time
 # ground_truth = {pair[0]: pair[1] for pair in data}
 # # print("Ground truth mapping: ", ground_truth)
 
+import math
+
+class FAVORPlusMapping:
+    def __init__(self, input_dim, nb_features, device, seed=42):
+        self.input_dim = input_dim
+        self.nb_features = nb_features
+        self.device = device
+        
+        # 1. 生成正交随机矩阵 (Orthogonal Random Matrix)
+        # 我们先生成正态分布矩阵，然后通过 QR 分解使其正交
+        nb_blocks = math.ceil(nb_features / input_dim)
+        W_list = []
+        for _ in range(nb_blocks):
+            q, _ = torch.linalg.qr(torch.randn(input_dim, input_dim, device=device))
+            W_list.append(q.T)
+            
+        # 拼接并截取到所需的 nb_features 维度 [input_dim, nb_features]
+        W_ortho = torch.cat(W_list, dim=0)[:nb_features].T
+        
+        # 2. 对每一行进行模长重采样（符合奇异值分布，模拟高斯核）
+        multiplier = torch.randn((input_dim, nb_features), device=device).norm(dim=0)
+        self.W = W_ortho * multiplier
+        
+    def map(self, x):
+        """
+        x: [n, input_dim]
+        returns: [n, nb_features]
+        """
+        # 计算内积 x @ W
+        projection = x @ self.W
+        
+        # FAVOR+ 的正向映射公式 (针对 Softmax/Gaussian 近似):
+        # phi(x) = exp(-||x||^2 / 2) * exp(W^T x)
+        # 为了数值稳定性，我们通常使用具有正向保证的映射
+        x_norm_squared = torch.sum(x**2, dim=-1, keepdim=True)
+        
+        # 使用偏置和指数函数模拟
+        # 加上常数项和归一化系数
+        diag_data = -0.5 * x_norm_squared
+        # 这里是 Positive Random Features 的核心逻辑
+        phi = torch.exp(projection + diag_data) / math.sqrt(self.nb_features)
+        
+        return phi
+
 
 def read_file():
     query_path = "/home/cheng/fly/data/real_noise/MultiMagna/yeast0_Y2H1.txt"
@@ -62,13 +106,22 @@ def build_inputs(Gq: nx.Graph, Gt: nx.Graph, dtype=torch.float32):
     return A, B, D
 
 
-def kernel_feature(X, kind="elu"):
+def kernel_feature(X, kind="elu", favor_mapper=None):
+    # print(f"Using kernel feature: {kind}")
     if kind == "elu":
         return F.elu(X) + 1.0
     elif kind == "softplus":
         return F.softplus(X) + 1e-6
     elif kind == "exp":
-        return torch.exp(X.clamp(max=10))
+        return torch.exp(X.clamp(min=-10, max=10))
+    elif kind == "poly2":
+        return torch.cat([F.relu(X), torch.pow(F.relu(X), 2)], dim=-1)
+    elif kind == "favor+":
+        if favor_mapper is None:
+            raise ValueError("favor_mapper must be provided when kind='favor+'")
+        return favor_mapper.map(X)
+    elif kind == "relu_squared":
+        return torch.pow(F.relu(X), 2) + 1e-6
     else:
         raise ValueError(kind)
 
@@ -77,7 +130,8 @@ def linear_matching_factors(
     V: torch.Tensor,
     W: torch.Tensor,
     beta: float = 20.0,
-    kind: str = "elu"
+    kind: str = "elu",
+    favor_mapper=None,
 ):
     """Return factors for P ~= R @ K.T without materializing the n x n matrix."""
     Vn = V / torch.linalg.norm(V, dim=1, keepdim=True).clamp_min(1e-12)
@@ -86,8 +140,8 @@ def linear_matching_factors(
     # Wn = W
 
     scale = math.sqrt(beta)
-    Q = kernel_feature(scale * Vn, kind=kind)
-    K = kernel_feature(scale * Wn, kind=kind)
+    Q = kernel_feature(scale * Vn, kind=kind, favor_mapper=favor_mapper)
+    K = kernel_feature(scale * Wn, kind=kind, favor_mapper=favor_mapper)
     denom = (Q @ K.sum(dim=0)).clamp_min(1e-12)
     R = Q / denom[:, None]
     return R, K
@@ -97,13 +151,21 @@ def make_soft_matching(
     V: torch.Tensor,
     W: torch.Tensor,
     beta: float = 20.0,
+    kind: str = "elu",
+    favor_mapper=None,
 ) -> torch.Tensor:
     """Build P with a linear-attention kernel form.
 
     P_ij ~= phi(sqrt(beta) V_i)^T phi(sqrt(beta) W_j)
             / sum_l phi(sqrt(beta) V_i)^T phi(sqrt(beta) W_l)
     """
-    R, K = linear_matching_factors(V, W, beta=beta)
+    R, K = linear_matching_factors(
+        V,
+        W,
+        beta=beta,
+        kind=kind,
+        favor_mapper=favor_mapper,
+    )
     return R @ K.T
 
 
@@ -118,9 +180,16 @@ def linear_fugal_loss_terms(
     mu: float,
     row_penalty: float,
     col_penalty: float,
-    kind: str = "elu"
+    kind: str = "elu",
+    favor_mapper=None,
 ):
-    R, K = linear_matching_factors(V, W, beta=beta, kind="elu")
+    R, K = linear_matching_factors(
+        V,
+        W,
+        beta=beta,
+        kind=kind,
+        favor_mapper=favor_mapper,
+    )
 
     left = R.T @ (A @ R)
     right = K.T @ (B.T @ K)
@@ -147,6 +216,8 @@ def train_with_adam(
     learning_rate: float = 1e-2,
     max_iter: int = 10000,
     use_GPU: bool = True,
+    kind: str = "elu",
+    favor_features: int | None = None,
 ):
     n = Gq.number_of_nodes()
     if Gt.number_of_nodes() != n:
@@ -163,6 +234,35 @@ def train_with_adam(
     D = D.to(device,dtype=dtype)
     V = torch.nn.Parameter(torch.rand((n, embed_dim), device=device, dtype=dtype))
     W = torch.nn.Parameter(torch.rand((n, embed_dim), device=device, dtype=dtype))
+    favor_mapper = None
+    if kind == "favor+":
+        favor_features = favor_features or embed_dim
+        favor_mapper = FAVORPlusMapping(embed_dim, favor_features, device=device)
+
+    with torch.no_grad():
+        R_debug, K_debug = linear_matching_factors(
+            V,
+            W,
+            beta=beta,
+            kind=kind,
+            favor_mapper=favor_mapper,
+        )
+        left_debug = R_debug.T @ (A @ R_debug)
+        right_debug = K_debug.T @ (B.T @ K_debug)
+        print(
+            "dimensions "
+            f"A={tuple(A.shape)} "
+            f"B={tuple(B.shape)} "
+            f"D={tuple(D.shape)} "
+            f"V={tuple(V.shape)} "
+            f"W={tuple(W.shape)} "
+            f"R={tuple(R_debug.shape)} "
+            f"K={tuple(K_debug.shape)} "
+            f"left={tuple(left_debug.shape)} "
+            f"right={tuple(right_debug.shape)}"
+        )
+        if favor_mapper is not None:
+            print(f"dimensions favor_mapper.W={tuple(favor_mapper.W.shape)}")
 
 
     optimizer = torch.optim.Adam([V, W], lr=learning_rate)
@@ -188,7 +288,8 @@ def train_with_adam(
             mu=mu,
             row_penalty=row_penalty,
             col_penalty=col_penalty,
-            kind="softplus"
+            kind=kind,
+            favor_mapper=favor_mapper,
         )
 
         optimizer.zero_grad()
@@ -210,7 +311,13 @@ def train_with_adam(
 
         if step % 1000 == 0 or step == max_iter - 1:
             
-            P = make_soft_matching(V, W, beta=beta).detach()
+            P = make_soft_matching(
+                V,
+                W,
+                beta=beta,
+                kind=kind,
+                favor_mapper=favor_mapper,
+            ).detach()
             P_np = P.cpu().numpy()
             row_ind, col_ind = scipy.optimize.linear_sum_assignment(P_np, maximize=True)
 
@@ -242,7 +349,13 @@ def train_with_adam(
     time_taken = time.time() - start_time
     print(f"Time taken for training with Adam: {time_taken:.2f} seconds")
 
-    P_final = make_soft_matching(best_V, best_W, beta=beta).detach()
+    P_final = make_soft_matching(
+        best_V,
+        best_W,
+        beta=beta,
+        kind=kind,
+        favor_mapper=favor_mapper,
+    ).detach()
     return P_final, best_V, best_W, history
 
 
@@ -264,14 +377,15 @@ if __name__ == "__main__":
     # ## hyperparameters
     
     use_GPU = True
-    learning_rate = 1e-2
+    learning_rate = 1e-3
     max_iter = 30000
-    m_list = [100]
+    m_list = [500]
     beta_list = [10]
     row_penalty_list = [10]
     col_penalty_list = [200]
-    mu = 0.5  
-
+    mu = 0.5
+    kind = "relu_squared"
+    favor_features = 200
 
 
 
@@ -296,7 +410,9 @@ if __name__ == "__main__":
                         col_penalty=col_penalty,
                         learning_rate=learning_rate,
                         max_iter=max_iter,
-                        use_GPU=use_GPU)
+                        use_GPU=use_GPU,
+                        kind=kind,
+                        favor_features=favor_features)
                     
                     P_final_np = P_final.cpu().numpy()
 
