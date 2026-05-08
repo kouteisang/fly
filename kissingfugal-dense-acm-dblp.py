@@ -203,6 +203,8 @@ def train_with_LBFGS(
     learning_rate: float = 1e-2,
     max_iter: int = 1000,
     lbfgs_max_iter: int = 20,
+    lbfgs_history_size: int = 5,
+    line_search_fn: str | None = None,
     use_GPU: bool = True,
 ):
     n = Gq.number_of_nodes()
@@ -210,7 +212,14 @@ def train_with_LBFGS(
         raise ValueError("This prototype assumes Gq and Gt have the same number of nodes.")
 
     device = torch.device("cuda" if use_GPU and torch.cuda.is_available() else "cpu")
-    dtype = torch.float64
+    dtype = torch.float32
+    num_embedding_params = 2 * n * embed_dim
+    print(
+        f"LBFGS setup: n={n}, embed_dim={embed_dim}, "
+        f"embedding_params={num_embedding_params:,}, dtype={dtype}, "
+        f"outer_epochs={max_iter}, inner_max_iter={lbfgs_max_iter}, "
+        f"history_size={lbfgs_history_size}, line_search_fn={line_search_fn}"
+    )
 
     A, B, D = build_inputs(Gq, Gt)
 
@@ -220,7 +229,13 @@ def train_with_LBFGS(
     V = torch.nn.Parameter(torch.rand((n, embed_dim), device=device, dtype=dtype))
     W = torch.nn.Parameter(torch.rand((n, embed_dim), device=device, dtype=dtype))
 
-    optimizer = torch.optim.LBFGS([V, W], lr=learning_rate, max_iter=lbfgs_max_iter, line_search_fn="strong_wolfe", history_size=5)
+    optimizer = torch.optim.LBFGS(
+        [V, W],
+        lr=learning_rate,
+        max_iter=lbfgs_max_iter,
+        history_size=lbfgs_history_size,
+        line_search_fn=line_search_fn,
+    )
     history = []
 
     best_loss = float("inf")
@@ -315,9 +330,11 @@ if __name__ == "__main__":
     
     use_GPU = True
     learning_rate = 1e-2
-    max_iter = 10000
+    max_iter = 500
     lbfgs_max_iter = 20
-    m_list = [10000]
+    lbfgs_history_size = 5
+    line_search_fn = "strong_wolfe"
+    m_list = [1000]
     beta_list = [10]
     row_penalty_list = [10]
     col_penalty_list = [200]
@@ -379,8 +396,10 @@ if __name__ == "__main__":
                             row_penalty=row_penalty,
                             col_penalty=col_penalty,
                             learning_rate=learning_rate,
-                            max_iter=500,
-                            lbfgs_max_iter=20,
+                            max_iter=max_iter,
+                            lbfgs_max_iter=lbfgs_max_iter,
+                            lbfgs_history_size=lbfgs_history_size,
+                            line_search_fn=line_search_fn,
                             use_GPU=use_GPU)
                         
                         P_final_np = P_final.cpu().numpy()
