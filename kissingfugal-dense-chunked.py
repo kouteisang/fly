@@ -114,8 +114,8 @@ warnings.filterwarnings(
 
 def read_file(
     query_path: str = "/home/cheng/fly/data/real_noise/MultiMagna/yeast0_Y2H1.txt",
-    target_path: str = "/home/cheng/fly/data/real_noise/MultiMagna/yeast5_Y2H1.txt",
-    n: int = 1004,
+    target_path: str = "/home/cheng/fly/data/real_noise/MultiMagna/yeast15_Y2H1.txt",
+    n: int = 1004
 ):
     Gq, Gt = nx.Graph(), nx.Graph()
     for i in range(n):
@@ -555,7 +555,7 @@ if __name__ == "__main__":
 
     # chunk: smaller -> less peak memory, more inner-loop overhead.
     # For MultiMagna (n=1004) any chunk <= n works; 256 demonstrates real chunking.
-    chunk = 256
+    chunk = 64
 
     Gq, Gt, n = read_file()
 

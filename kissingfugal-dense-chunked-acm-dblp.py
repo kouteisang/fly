@@ -88,6 +88,7 @@ default to MultiMagna's yeast0_Y2H1 / yeast5_Y2H1 (n=1004).
 """
 
 import math
+import sys
 import time
 import warnings
 
@@ -119,7 +120,7 @@ warnings.filterwarnings(
 
 def read_file(
     query_path: str = "/home/cheng/fly/data/real_noise/ACM-DBLP/ACM.txt",
-    target_path: str = "/home/cheng/fly/data/real_noise/ACM-DBLP/ACM.txt",
+    target_path: str = "/home/cheng/fly/data/real_noise/ACM-DBLP/DBLP.txt",
     n: int = 9916,
 ):
 
@@ -546,23 +547,57 @@ def train_with_LBFGS(
 
 
 # ---------------------------------------------------------------------------
+# Parse CLI arguments (key=value format)
+# ---------------------------------------------------------------------------
+
+def parse_cli_args(defaults):
+    """Parse command-line arguments in key=value format."""
+    for arg in sys.argv[1:]:
+        if "=" in arg:
+            key, value = arg.split("=", 1)
+            if key in defaults:
+                # Infer type from default value
+                default_type = type(defaults[key])
+                if default_type == bool:
+                    defaults[key] = value.lower() in ("true", "1", "yes")
+                else:
+                    defaults[key] = default_type(value)
+            else:
+                print(f"Warning: unknown parameter '{key}'")
+    return defaults
+
+
+# ---------------------------------------------------------------------------
 # Main: matches the kissingfugal-dense-LA.py demo on MultiMagna
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    use_GPU = True
-    learning_rate = 1e-2
-    max_iter = 10000
-
-    m_list = [1000]
-    beta_list = [10]
-    row_penalty_list = [10]
-    col_penalty_list = [200]
-    mu = 0.1
-
-    # chunk: smaller -> less peak memory, more inner-loop overhead.
-    # For MultiMagna (n=1004) any chunk <= n works; 256 demonstrates real chunking.
-    chunk = 1024
+    # Default hyperparameters
+    params = {
+        "use_GPU": True,
+        "learning_rate": 1e-2,
+        "max_iter": 10000,
+        "embed_dim": 1000,
+        "beta": 10,
+        "row_pen": 10,
+        "col_pen": 200,
+        "chunk": 1024,
+        "mu": 0.1,
+    }
+    
+    # Parse CLI arguments to override defaults
+    params = parse_cli_args(params)
+    
+    use_GPU = params["use_GPU"]
+    learning_rate = params["learning_rate"]
+    max_iter = params["max_iter"]
+    mu = params["mu"]
+    chunk = params["chunk"]
+    
+    m_list = [params["embed_dim"]]
+    beta_list = [params["beta"]]
+    row_penalty_list = [params["row_pen"]]
+    col_penalty_list = [params["col_pen"]]
 
     Gq, Gt, n = read_file()
 
