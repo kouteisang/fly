@@ -114,7 +114,7 @@ warnings.filterwarnings(
 
 def read_file(
     query_path: str = "/home/cheng/fly/data/real_noise/MultiMagna/yeast0_Y2H1.txt",
-    target_path: str = "/home/cheng/fly/data/real_noise/MultiMagna/yeast15_Y2H1.txt",
+    target_path: str = "/home/cheng/fly/data/real_noise/MultiMagna/yeast20_Y2H1.txt",
     n: int = 1004
 ):
     Gq, Gt = nx.Graph(), nx.Graph()

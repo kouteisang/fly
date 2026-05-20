@@ -19,7 +19,7 @@ All the results and hyperparameters are under Result-all
 
 ```
 python3 kissingfugal-dense.py
-python3 kissingfugal-sparse-acm-dblp.py (for the acm-dblp dataset)
+python3 kissingfugal-dense-acm-dblp.py (for the acm-dblp dataset)
 ```
 
 # dense version with Linear Attention
@@ -43,5 +43,26 @@ This version automatically choose the chunk size and embedding dimension by the 
 python3 kissingfugal-dense-chunked-fast.py
 python3 kissingfugal-dense-chunked-fast-acm-dblp.py (for the acm-dblp dataset)
 ```
+
+# Hyperparameters 
+
+
+
+**m**: the size of the low rank matrix (n*m), for the fast chunk vervion, m is choosen automaticaly and for others m = n / 10 works very well.
+
+**chunk size**: the size of each chunk.
+
+**beta**: Bata control the probability distribution of the softmax, for now, 10 works well.
+
+**col_penalty**: control the loss penality of whether each column equals to 1, for now, 200 works well.
+
+**learning_rate**: learning rate for now 0.01 works well.
+
+**mu**: To control the feature loss, please check the fugal paper for this parameter setting
+
+**max_iteration**: The number of epochs, for now, we set it to 10000, but please try early stopping or 
+some other techiniques, to save the time.
+
+**Gradient descent algorithm**: For now, I use Adam, but please try others such as SGD.
 
 
