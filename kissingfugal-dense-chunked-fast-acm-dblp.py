@@ -646,7 +646,7 @@ def train_with_LBFGS(
 if __name__ == "__main__":
     use_GPU = True
     learning_rate = 1e-2
-    max_iter = 10000
+    max_iter = 5000
     mu = 0.1
 
     Gq, Gt, n = read_file()
