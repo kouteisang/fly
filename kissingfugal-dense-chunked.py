@@ -114,7 +114,7 @@ warnings.filterwarnings(
 
 def read_file(
     query_path: str = "/home/cheng/fly/data/real_noise/MultiMagna/yeast0_Y2H1.txt",
-    target_path: str = "/home/cheng/fly/data/real_noise/MultiMagna/yeast20_Y2H1.txt",
+    target_path: str = "/home/cheng/fly/data/real_noise/MultiMagna/yeast25_Y2H1.txt",
     n: int = 1004
 ):
     Gq, Gt = nx.Graph(), nx.Graph()
@@ -545,7 +545,7 @@ def train_with_LBFGS(
 if __name__ == "__main__":
     use_GPU = True
     learning_rate = 1e-2
-    max_iter = 10000
+    max_iter = 3500
 
     m_list = [100]
     beta_list = [10]

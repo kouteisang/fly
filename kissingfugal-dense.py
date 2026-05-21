@@ -14,9 +14,9 @@ import time
 
 
 def read_file():
-    query_path: str = "/home/cheng/fly/data/real_noise/MultiMagna/yeast0_Y2H1.txt"
-    target_path: str = "/home/cheng/fly/data/real_noise/MultiMagna/yeast25_Y2H1.txt"
-    n: int = 1004
+    query_path: str = "/home/cheng/fly/data/real_noise/contacts-prox-high-school-2013/contacts-prox-high-school-2013_100.txt"
+    target_path: str = "/home/cheng/fly/data/real_noise/contacts-prox-high-school-2013/contacts-prox-high-school-2013_80.txt"
+    n: int = 327
 
     Gq = nx.Graph()
     Gt = nx.Graph()
@@ -129,7 +129,9 @@ def train_with_adam(
     best_V = V.detach().clone()
     best_W = W.detach().clone()
     wait = 0
-    patience = max_iter
+
+    patience = 300
+    warmup_steps = 200
     min_delta = 1e-4
 
     start_time = time.time()
@@ -149,17 +151,32 @@ def train_with_adam(
         loss_value = float(loss.detach())
         # print(step, loss_value)
 
-        if loss_value < best_loss - min_delta:
-            best_loss = loss_value
-            best_V = V.detach().clone()
-            best_W = W.detach().clone()
-            wait = 0
+        # 始终在 warmup 阶段跟踪 best
+        if step < warmup_steps:
+            if loss_value < best_loss:
+                best_loss = loss_value
+                best_V = V.detach().clone()
+                best_W = W.detach().clone()
         else:
-            wait += 1
+            # warmup 结束后启用 early stopping
+            adaptive_delta = min_delta * max(1.0, abs(best_loss))
+            if loss_value < best_loss - min_delta:
+                best_loss = loss_value
+                best_V = V.detach().clone()
+                best_W = W.detach().clone()
+                wait = 0
+            else:
+                wait += 1
 
-        if wait >= patience:
-            print(f"Early stopping at step={step}, best_loss={best_loss:.6f}, accuracy={acc_hungarian:.4f}")
-            break
+            if wait >= patience:
+                print(f"Early stopping at step={step}, best_loss={best_loss:.6f}")
+                break
+
+        if step % 500 == 0:
+            print(f"Step {step:5d} | loss={loss_value:.6f} | best={best_loss:.6f} "
+                  f"| structure={float(structure_term):.4f} "
+                  f"| feature={float(feature_term):.4f} "
+                  f"| constraint={float(constraint_term):.4f}")
     
     time_taken = time.time() - start_time
     print(f"Time taken for training with Adam: {time_taken:.2f} seconds")
@@ -194,8 +211,8 @@ if __name__ == "__main__":
     
     use_GPU = True
     learning_rate = 1e-2
-    max_iter = 20000
-    m_list = [100]
+    max_iter = 10000
+    m_list = [20]
     beta_list = [10]
     row_penalty_list = [10]
     col_penalty_list = [200]

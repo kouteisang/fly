@@ -513,6 +513,10 @@ def train_with_adam(
     best_V = V.detach().clone()
     best_W = W.detach().clone()
 
+    warmup_steps = 500   # 你的 loss 前期下降很快，warmup 可以长一点
+    patience = 1000      # 给足够时间确认真的停滞了
+    min_delta = 10.0     # 相对 ~20000 的量级合理
+
     if device.type == "cuda":
         torch.cuda.synchronize()
     start = time.time()
@@ -531,10 +535,27 @@ def train_with_adam(
 
         loss_value = float(loss.detach())
         history.append(loss_value)
-        if loss_value < best_loss:
-            best_loss = loss_value
-            best_V = V.detach().clone()
-            best_W = W.detach().clone()
+        
+        # 始终在 warmup 阶段跟踪 best
+        if step < warmup_steps:
+            if loss_value < best_loss:
+                best_loss = loss_value
+                best_V = V.detach().clone()
+                best_W = W.detach().clone()
+        else:
+            # warmup 结束后启用 early stopping
+            adaptive_delta = min_delta * max(1.0, abs(best_loss))
+            if loss_value < best_loss - min_delta:
+                best_loss = loss_value
+                best_V = V.detach().clone()
+                best_W = W.detach().clone()
+                wait = 0
+            else:
+                wait += 1
+
+            if wait >= patience:
+                print(f"Early stopping at step={step}, best_loss={best_loss:.6f}")
+                break
 
         if step % log_every == 0 or step == max_iter - 1:
             print(
@@ -646,7 +667,7 @@ def train_with_LBFGS(
 if __name__ == "__main__":
     use_GPU = True
     learning_rate = 1e-2
-    max_iter = 5000
+    max_iter = 3000
     mu = 0.1
 
     Gq, Gt, n = read_file()
