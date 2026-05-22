@@ -14,9 +14,9 @@ import time
 
 
 def read_file():
-    query_path: str = "/home/cheng/fly/data/real_noise/contacts-prox-high-school-2013/contacts-prox-high-school-2013_100.txt"
-    target_path: str = "/home/cheng/fly/data/real_noise/contacts-prox-high-school-2013/contacts-prox-high-school-2013_80.txt"
-    n: int = 327
+    query_path: str = "/home/cheng/fly/data/real_noise/ACM-DBLP/ACM.txt"
+    target_path: str = "/home/cheng/fly/data/real_noise/ACM-DBLP/ACM95.txt"
+    n: int = 9872
 
     Gq = nx.Graph()
     Gt = nx.Graph()
@@ -212,11 +212,11 @@ if __name__ == "__main__":
     use_GPU = True
     learning_rate = 1e-2
     max_iter = 10000
-    m_list = [20]
+    m_list = [2000]
     beta_list = [10]
     row_penalty_list = [10]
     col_penalty_list = [200]
-    mu = 0.5  # weight for the feature term in the loss function
+    mu = 0.1  # weight for the feature term in the loss function
 
 
 
