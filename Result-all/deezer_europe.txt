@@ -1,0 +1,153 @@
+#dense chunked version
+embed_dim=100 beta=10 row_pen=10 col_pen=200 chunk=2048
+step=    0  loss=139798.3281  struct+feat=41087.8359  constraint=98710.4922
+step=  500  loss=11789.7666  struct+feat=11765.6826  constraint=24.0840
+step= 1000  loss=-1631.1799  struct+feat=-1703.5869  constraint=72.4070
+step= 1500  loss=-5980.6538  struct+feat=-6043.6636  constraint=63.0098
+step= 2000  loss=-7526.5532  struct+feat=-7626.2773  constraint=99.7241
+step= 2500  loss=-8269.9219  struct+feat=-8348.6514  constraint=78.7294
+step= 3000  loss=-8741.1992  struct+feat=-8829.9863  constraint=88.7871
+step= 3499  loss=-9040.0117  struct+feat=-9092.6904  constraint=52.6787
+[adam] 3500 iters in 19195.7s (chunk=2048, n=28281, m=100, beta=10)
+rows close to 1: True (max|sum-1| = 5.364e-07)
+cols close to 1: False (max|sum-1| = 6.569e-02)
+acc_hungarian: 0.1427
+acc_greedy:    0.0716
+
+(flynew) shubham@sol:~/fly$ CUDA_VISIBLE_DEVICES=1 python3 kissingfugal-dense-chunked-fast.py 
+embed_dim=None beta=10 row_pen=10 col_pen=200
+[fast-adam] n=28281  m=200  chunk=4096  max_inner_batch=8192  use_amp=True  device=cuda
+step=    0  loss=92503.4766  struct+feat=41082.8398  constraint=51420.6367
+step=  500  loss=10001.9443  struct+feat=9882.3477  constraint=119.5964
+step= 1000  loss=-2730.6267  struct+feat=-2906.5981  constraint=175.9714
+step= 1500  loss=-7440.4814  struct+feat=-7616.9683  constraint=176.4869
+step= 2000  loss=-9301.2578  struct+feat=-9477.1895  constraint=175.9317
+step= 2500  loss=-10217.3027  struct+feat=-10385.2354  constraint=167.9328
+step= 3000  loss=-10733.7285  struct+feat=-10899.2822  constraint=165.5536
+step= 3499  loss=-11025.8770  struct+feat=-11188.2979  constraint=162.4211
+[fast-adam] 3500 iters in 3230.1s
+rows close to 1: True (max|sum-1| = 5.960e-07)
+cols close to 1: False (max|sum-1| = 6.961e-02)
+acc_hungarian: 0.1791
+acc_greedy:    0.0808
+
+(flynew) shubham@sol:~/fly$ CUDA_VISIBLE_DEVICES=1 python3 kissingfugal-dense-chunked-fast.py 
+embed_dim=300 beta=10 row_pen=10 col_pen=200
+[fast-adam] n=28281  m=300  chunk=4096  max_inner_batch=8192  use_amp=True  device=cuda
+step=    0  loss=75680.0938  struct+feat=41065.3711  constraint=34614.7266
+step=  500  loss=9294.1826  struct+feat=9182.2461  constraint=111.9364
+step= 1000  loss=-4525.3218  struct+feat=-4691.9478  constraint=166.6260
+step= 1500  loss=-8720.4277  struct+feat=-8878.7744  constraint=158.3467
+step= 2000  loss=-10263.7129  struct+feat=-10414.8037  constraint=151.0911
+step= 2500  loss=-10967.5840  struct+feat=-11121.0850  constraint=153.5015
+step= 3000  loss=-11507.0576  struct+feat=-11647.2822  constraint=140.2250
+step= 3499  loss=-11786.0127  struct+feat=-11956.6445  constraint=170.6320
+[fast-adam] 3500 iters in 3324.4s
+rows close to 1: True (max|sum-1| = 5.364e-07)
+cols close to 1: False (max|sum-1| = 6.982e-02)
+acc_hungarian: 0.1787
+acc_greedy:    0.0839
+
+
+embed_dim=300 beta=30 row_pen=10 col_pen=200
+[fast-adam] n=28281  m=300  chunk=4096  max_inner_batch=8192  use_amp=True  device=cuda
+step=    0  loss=363260.6562  struct+feat=41101.5430  constraint=322159.1250
+step=  500  loss=11102.4287  struct+feat=10287.5684  constraint=814.8602
+step= 1000  loss=-11850.5732  struct+feat=-12770.5039  constraint=919.9303
+step= 1500  loss=-37720.7500  struct+feat=-38340.0039  constraint=619.2528
+step= 2000  loss=-45872.1133  struct+feat=-46297.9648  constraint=425.8497
+step= 2500  loss=-48076.8086  struct+feat=-48424.0352  constraint=347.2260
+step= 3000  loss=-48999.9297  struct+feat=-49323.5352  constraint=323.6050
+step= 3499  loss=-49494.3711  struct+feat=-49814.4688  constraint=320.0971
+[fast-adam] 3500 iters in 3324.5s
+rows close to 1: True (max|sum-1| = 5.960e-07)
+cols close to 1: False (max|sum-1| = 1.345e-01)
+acc_hungarian: 0.2697
+acc_greedy:    0.2676
+
+embed_dim=300 beta=50 row_pen=10 col_pen=200
+[fast-adam] n=28281  m=300  chunk=4096  max_inner_batch=8192  use_amp=True  device=cuda
+step=    0  loss=881006.3750  struct+feat=41057.6094  constraint=839948.7500
+step=  500  loss=16820.4766  struct+feat=15480.4912  constraint=1339.9851
+step= 1000  loss=1095.4885  struct+feat=-1024.7820  constraint=2120.2705
+step= 1500  loss=-9941.4795  struct+feat=-11508.5068  constraint=1567.0272
+step= 2000  loss=-14665.2832  struct+feat=-15901.3584  constraint=1236.0754
+step= 2500  loss=-17078.0801  struct+feat=-18102.8906  constraint=1024.8114
+step= 3000  loss=-18521.3359  struct+feat=-19454.5957  constraint=933.2598
+step= 3499  loss=-19665.7500  struct+feat=-20457.0703  constraint=791.3211
+[fast-adam] 3500 iters in 3320.8s
+rows close to 1: True (max|sum-1| = 5.960e-07)
+cols close to 1: False (max|sum-1| = 1.429e-01)
+acc_hungarian: 0.0074
+acc_greedy:    0.0071
+
+(flynew) shubham@sol:~/fly$ CUDA_VISIBLE_DEVICES=1 python3 kissingfugal-dense-chunked-fast.py 
+embed_dim=300 beta=40 row_pen=10 col_pen=200
+[fast-adam] n=28281  m=300  chunk=4096  max_inner_batch=8192  use_amp=True  device=cuda
+step=    0  loss=577860.0625  struct+feat=41043.3711  constraint=536816.6875
+step=  500  loss=13594.9453  struct+feat=12456.3047  constraint=1138.6410
+step= 1000  loss=-3915.4321  struct+feat=-5518.6172  constraint=1603.1851
+step= 1500  loss=-17184.3730  struct+feat=-18455.2500  constraint=1270.8768
+step= 2000  loss=-22395.2812  struct+feat=-23354.4219  constraint=959.1412
+step= 2500  loss=-24504.5312  struct+feat=-25377.8613  constraint=873.3303
+step= 3000  loss=-26031.2949  struct+feat=-26793.6719  constraint=762.3767
+step= 3499  loss=-27078.5625  struct+feat=-27687.9219  constraint=609.3588
+[fast-adam] 3500 iters in 3321.3s
+rows close to 1: True (max|sum-1| = 5.960e-07)
+cols close to 1: False (max|sum-1| = 1.130e-01)
+acc_hungarian: 0.0235
+acc_greedy:    0.0222
+
+(flynew) shubham@sol:~/fly$ CUDA_VISIBLE_DEVICES=1 python3 kissingfugal-dense-chunked-fast.py
+embed_dim=300 beta=25 row_pen=10 col_pen=200
+[fast-adam] n=28281  m=300  chunk=4096  max_inner_batch=8192  use_amp=True  device=cuda
+step=    0  loss=247626.2031  struct+feat=41087.6562  constraint=206538.5469
+step=  500  loss=7542.1240  struct+feat=6850.2930  constraint=691.8312
+step= 1000  loss=-92305.9375  struct+feat=-93160.6328  constraint=854.6987
+step= 1500  loss=-130221.7188  struct+feat=-130634.0625  constraint=412.3461
+step= 2000  loss=-137360.6250  struct+feat=-137608.7344  constraint=248.1055
+step= 2500  loss=-140203.5781  struct+feat=-140418.8906  constraint=215.3192
+step= 3000  loss=-141769.5781  struct+feat=-141940.5156  constraint=170.9438
+step= 3499  loss=-142959.1875  struct+feat=-143131.5000  constraint=172.3125
+[fast-adam] 3500 iters in 3323.3s
+rows close to 1: True (max|sum-1| = 7.153e-07)
+cols close to 1: False (max|sum-1| = 2.885e-01)
+acc_hungarian: 0.7104
+acc_greedy:    0.7085
+
+
+(flynew) shubham@sol:~/fly$ CUDA_VISIBLE_DEVICES=1 python3 kissingfugal-dense-chunked-fast.py 
+embed_dim=300 beta=25 row_pen=10 col_pen=200
+[fast-adam] n=28281  m=300  chunk=4096  max_inner_batch=8192  use_amp=True  device=cuda
+step=    0  loss=251620.6250  struct+feat=41115.8438  constraint=210504.7812  gpu_mem=alloc=0.34GB reserved=8.59GB peak_alloc=5.66GB peak_reserved=8.59GB max_gpu_usage=36.5%
+step=  500  loss=8832.4795  struct+feat=8178.4668  constraint=654.0125  gpu_mem=alloc=0.34GB reserved=8.59GB peak_alloc=5.78GB peak_reserved=8.59GB max_gpu_usage=36.5%
+step= 1000  loss=-70192.9375  struct+feat=-70988.0625  constraint=795.1223  gpu_mem=alloc=0.34GB reserved=8.59GB peak_alloc=5.78GB peak_reserved=8.59GB max_gpu_usage=36.5%
+step= 1500  loss=-111184.1328  struct+feat=-111565.5938  constraint=381.4592  gpu_mem=alloc=0.34GB reserved=8.59GB peak_alloc=5.78GB peak_reserved=8.59GB max_gpu_usage=36.5%
+step= 2000  loss=-118205.4688  struct+feat=-118453.7969  constraint=248.3291  gpu_mem=alloc=0.34GB reserved=8.59GB peak_alloc=5.78GB peak_reserved=8.59GB max_gpu_usage=36.5%
+step= 2500  loss=-120618.3281  struct+feat=-120812.5781  constraint=194.2508  gpu_mem=alloc=0.34GB reserved=8.59GB peak_alloc=5.78GB peak_reserved=8.59GB max_gpu_usage=36.5%
+step= 3000  loss=-121830.5547  struct+feat=-122009.5234  constraint=178.9725  gpu_mem=alloc=0.34GB reserved=8.59GB peak_alloc=5.78GB peak_reserved=8.59GB max_gpu_usage=36.5%
+step= 3499  loss=-122847.3438  struct+feat=-123052.1797  constraint=204.8373  gpu_mem=alloc=0.34GB reserved=8.59GB peak_alloc=5.78GB peak_reserved=8.59GB max_gpu_usage=36.5%
+[fast-adam] 3500 iters in 3326.4s
+[fast-adam] peak memory usage: gpu_mem=alloc=0.34GB reserved=8.59GB peak_alloc=5.78GB peak_reserved=8.59GB max_gpu_usage=36.5%
+rows close to 1: True (max|sum-1| = 7.153e-07)
+cols close to 1: False (max|sum-1| = 1.523e-01)
+acc_hungarian: 0.6548
+acc_greedy:    0.6526
+
+(flynew) shubham@sol:~/fly$ CUDA_VISIBLE_DEVICES=1 python3 kissingfugal-dense-chunked-fast.py 
+embed_dim=300 beta=25 row_pen=10 col_pen=200
+[fast-adam] n=28281  m=300  chunk=4096  max_inner_batch=8192  use_amp=True  device=cuda
+step=    0  loss=290344.8750  struct+feat=82105.3125  constraint=208239.5781
+step=  500  loss=-806.4015  struct+feat=-1761.4030  constraint=955.0015
+step= 1000  loss=-114613.5625  struct+feat=-115384.1484  constraint=770.5826
+step= 1500  loss=-130831.5781  struct+feat=-131264.8125  constraint=433.2363
+step= 2000  loss=-134894.0312  struct+feat=-135252.3750  constraint=358.3476
+step= 2500  loss=-137428.0156  struct+feat=-137746.1562  constraint=318.1443
+step= 3000  loss=-139043.1094  struct+feat=-139359.1719  constraint=316.0548
+step= 3499  loss=-140647.6094  struct+feat=-140958.0625  constraint=310.4568
+[fast-adam] 3500 iters in 3325.7s
+[fast-adam] peak memory usage: gpu_mem=alloc=0.34GB reserved=8.59GB peak_alloc=5.78GB peak_reserved=8.59GB max_gpu_usage=36.5%
+rows close to 1: True (max|sum-1| = 7.153e-07)
+cols close to 1: False (max|sum-1| = 2.872e-01)
+acc_hungarian: 0.7195
+acc_greedy:    0.7160
