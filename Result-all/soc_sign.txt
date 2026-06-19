@@ -1,0 +1,15 @@
+(flynew) shubham@sol:~/fly$ CUDA_VISIBLE_DEVICES=1 python3 kissingfugal-dense-chunked-fast.py
+embed_dim=256 beta=25 row_pen=10 col_pen=200
+[fast-adam] n=131828  m=256  chunk=1024  max_inner_batch=1024  use_amp=True  device=cuda
+step=    0  loss=4048529.0000  struct+feat=2910868.7500  constraint=1137660.1250
+step=  500  loss=2726044.7500  struct+feat=2721658.2500  constraint=4386.4180
+step= 1000  loss=2725464.5000  struct+feat=2721290.5000  constraint=4174.0234
+step= 1500  loss=2722882.5000  struct+feat=2718656.5000  constraint=4225.9834
+step= 1999  loss=2705895.5000  struct+feat=2700684.2500  constraint=5211.1494
+[fast-adam] 2000 iters in 55215.4s
+[fast-adam] peak memory usage: gpu_mem=alloc=1.34GB reserved=22.86GB peak_alloc=22.00GB peak_reserved=22.86GB max_gpu_usage=97.1%
+acc_hungarian: skipped (dense P would use 64.74GB)
+rows close to 1: True (max|sum-1| = 2.742e-06)
+cols close to 1: False (max|sum-1| = 5.016e-01)
+acc_greedy:    0.0000
+

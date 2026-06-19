@@ -90,6 +90,7 @@ default to MultiMagna's yeast0_Y2H1 / yeast5_Y2H1 (n=1004).
 import math
 import time
 import warnings
+from pathlib import Path
 
 import numpy as np
 import networkx as nx
@@ -113,10 +114,18 @@ warnings.filterwarnings(
 # ---------------------------------------------------------------------------
 
 def read_file(
-    query_path: str = "/home/cheng/fly/data/real_noise/MultiMagna/yeast0_Y2H1.txt",
-    target_path: str = "/home/cheng/fly/data/real_noise/MultiMagna/yeast25_Y2H1.txt",
-    n: int = 1004
+    query_path: str = "fly/data/real_noise/deezer_europe/deezer-100.txt",
+    target_path: str = "fly/data/real_noise/deezer_europe/deezer-95.txt",
+    n: int = 28281
 ):
+    repo_root = Path(__file__).resolve().parents[1]
+    query_path = Path(query_path)
+    target_path = Path(target_path)
+    if not query_path.is_absolute():
+        query_path = repo_root / query_path
+    if not target_path.is_absolute():
+        target_path = repo_root / target_path
+
     Gq, Gt = nx.Graph(), nx.Graph()
     for i in range(n):
         Gq.add_node(i)
@@ -551,11 +560,11 @@ if __name__ == "__main__":
     beta_list = [10]
     row_penalty_list = [10]
     col_penalty_list = [200]
-    mu = 0.5
+    mu = 0.1
 
     # chunk: smaller -> less peak memory, more inner-loop overhead.
     # For MultiMagna (n=1004) any chunk <= n works; 256 demonstrates real chunking.
-    chunk = 64
+    chunk = 2048
 
     Gq, Gt, n = read_file()
 

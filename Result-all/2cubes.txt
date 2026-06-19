@@ -1,0 +1,69 @@
+(flynew) shubham@sol:~/fly$ CUDA_VISIBLE_DEVICES=1 python3 kissingfugal-dense-chunked-fast.py
+embed_dim=256 beta=25 row_pen=10 col_pen=200
+[fast-adam] n=101493  m=256  chunk=1024  max_inner_batch=1024  train_col_bias=True  use_amp=True  device=cuda
+step=    0  loss=908925.1875  struct+feat=34844.1328  constraint=874081.0625
+step=  500  loss=29204.2148  struct+feat=24199.8477  constraint=5004.3672
+step= 1000  loss=18523.6328  struct+feat=16911.0859  constraint=1612.5461
+step= 1500  loss=16282.2822  struct+feat=14930.4355  constraint=1351.8469
+step= 1999  loss=13699.5566  struct+feat=12361.1836  constraint=1338.3728
+[fast-adam] 2000 iters in 36571.8s
+[fast-adam] peak memory usage: gpu_mem=alloc=1.07GB reserved=6.38GB peak_alloc=6.02GB peak_reserved=6.38GB max_gpu_usage=27.1%
+acc_hungarian: skipped (dense P would use 38.37GB)
+rows close to 1: True (max|sum-1| = 2.027e-06)
+cols close to 1: False (max|sum-1| = 1.656e-01)
+acc_top1:      0.0001
+diag_mass:     0.000071
+acc_greedy:    0.0000
+
+(flynew) shubham@sol:~/fly$ CUDA_VISIBLE_DEVICES= python3 run-regal-slashdot.py
+Detected N=101493 (will use dense adjacency only if feasible)
+Estimated dense adjacency: 9.59 GiB
+Built dense adjacency matrices: src nnz=1647280 tar nnz=1564802
+Regal
+REGAL time: 2082.482s
+greedy matching time: 1.690s
+total time: 2156.231s
+greedy accuracy: 0.000532
+peak RAM usage: 172.704MiB
+
+(flynew) shubham@sol:~/fly$ CUDA_VISIBLE_DEVICES=1 python3 kissingfugal-dense-chunked-fast.py
+embed_dim=300 beta=25 row_pen=50 col_pen=1500
+[fast-adam] n=101493  m=300  chunk=4096  max_inner_batch=4096  init_mode=random  train_col_bias=True  use_amp=True  device=cuda
+step=    0  loss=34308.6211  struct+feat=34178.1133  constraint=130.5064  beta=5.00
+step=  500  loss=23458.2559  struct+feat=23250.2051  constraint=208.0505  beta=11.00
+step= 1000  loss=18785.1230  struct+feat=17994.2617  constraint=790.8608  beta=17.00
+step= 1500  loss=18044.4590  struct+feat=16185.4160  constraint=1859.0421  beta=23.01
+step= 2000  loss=17096.5645  struct+feat=15319.2080  constraint=1777.3558  beta=25.00
+step= 2500  loss=16826.7305  struct+feat=14941.4258  constraint=1885.3054  beta=25.00
+step= 3000  loss=16743.8203  struct+feat=14704.0273  constraint=2039.7931  beta=25.00
+step= 3500  loss=16670.0332  struct+feat=14537.2393  constraint=2132.7932  beta=25.00
+step= 4000  loss=16633.2832  struct+feat=14412.6650  constraint=2220.6182  beta=25.00
+step= 4500  loss=16541.9785  struct+feat=14310.9590  constraint=2231.0195  beta=25.00
+step= 4999  loss=16488.1602  struct+feat=14222.6182  constraint=2265.5415  beta=25.00
+[fast-adam] 5000 iters in 76690.0s
+[fast-adam] peak memory usage: gpu_mem=alloc=1.22GB reserved=22.87GB peak_alloc=18.61GB peak_reserved=22.87GB max_gpu_usage=97.1%
+acc_hungarian: skipped (dense P would use 38.37GB)
+rows close to 1: True (max|sum-1| = 2.980e-07)
+cols close to 1: False (max|sum-1| = 2.946e-02)
+acc_top1:      0.0001
+diag_mass:     0.000048
+acc_greedy:    0.0001
+
+###0%noise
+(flynew) shubham@sol:~/fly$ CUDA_VISIBLE_DEVICES=0 python3 kissingfugal-dense-chunked-fast.py
+embed_dim=200 beta=25 row_pen=10 col_pen=200
+[fast-adam] n=101493  m=200  chunk=1024  max_inner_batch=1024  init_mode=random  train_col_bias=True  use_amp=True  device=cuda
+step=    0  loss=35111.3867  struct+feat=31394.7090  constraint=3716.6777
+step=  500  loss=4671.3701  struct+feat=971.3653  constraint=3700.0046
+step= 1000  loss=-36382.1641  struct+feat=-41193.2578  constraint=4811.0957
+step= 1500  loss=-89683.1875  struct+feat=-94732.8203  constraint=5049.6333
+step= 2000  loss=-138888.1406  struct+feat=-142749.0625  constraint=3860.9275
+step= 2499  loss=-176480.9531  struct+feat=-178838.2500  constraint=2357.2976
+[fast-adam] 2500 iters in 45474.2s
+[fast-adam] peak memory usage: gpu_mem=alloc=0.85GB reserved=6.24GB peak_alloc=5.70GB peak_reserved=6.24GB max_gpu_usage=26.5%
+acc_hungarian: skipped (dense P would use 38.37GB)
+rows close to 1: True (max|sum-1| = 9.537e-07)
+cols close to 1: False (max|sum-1| = 1.519e-01)
+acc_top1:      0.0001
+diag_mass:     0.000116
+acc_greedy:    0.0001

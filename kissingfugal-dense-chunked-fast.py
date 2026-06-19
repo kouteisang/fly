@@ -171,9 +171,9 @@ def recommend_embed_dim(n: int, num_edges: int) -> int:
 # ============================================================================
 
 def read_file(
-    query_path: str = "/home/cheng/fly/data/real_noise/MultiMagna/yeast0_Y2H1.txt",
-    target_path: str = "/home/cheng/fly/data/real_noise/MultiMagna/yeast25_Y2H1.txt",
-    n: int = 1004
+    query_path: str = "fly/data/real_noise/deezer_europe/deezer-100.txt",
+    target_path: str = "fly/data/real_noise/deezer_europe/deezer-95.txt",
+    n: int = 28281
 ):
     Gq, Gt = nx.Graph(), nx.Graph()
     for i in range(n):

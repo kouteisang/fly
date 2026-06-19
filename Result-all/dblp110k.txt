@@ -1,0 +1,18 @@
+(flynew) shubham@sol:~/fly$ PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True CUDA_VISIBLE_DEVICES=0 python3 claudefast.py
+embed_dim=500 beta=25 row_pen=10 col_pen=200
+[fast-adam] avg_degree=9.0  use_checkpoint=True
+[fast-adam] n=110000  m=500  chunk=1024  max_inner_batch=256  init_mode=random  train_col_bias=True  use_amp=True  device=cuda
+gpu_mem=alloc=0.04GB reserved=0.04GB peak_alloc=0.04GB peak_reserved=0.04GB max_gpu_usage=0.2%
+step=    0  loss=763955.5625  struct+feat=261263.6250  constraint=502691.9375
+step=  500  loss=-59622.1484  struct+feat=-62843.3633  constraint=3221.2136
+step= 1000  loss=-403465.8750  struct+feat=-406889.2500  constraint=3423.3840
+step= 1500  loss=-635635.4375  struct+feat=-638764.6875  constraint=3129.2363
+step= 1999  loss=-760618.7500  struct+feat=-763220.6875  constraint=2601.9214
+[fast-adam] 2000 iters in 120985.9s
+[fast-adam] peak memory usage: gpu_mem=alloc=2.14GB reserved=16.82GB peak_alloc=16.13GB peak_reserved=17.05GB max_gpu_usage=72.4%
+acc_hungarian: skipped (dense P would use 45.08GB)
+rows close to 1: True (max|sum-1| = 1.669e-06)
+cols close to 1: False (max|sum-1| = 6.306e-01)
+acc_top1:      0.6339
+diag_mass:     0.580023
+acc_greedy:    0.6032

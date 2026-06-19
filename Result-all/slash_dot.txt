@@ -1,0 +1,70 @@
+(flynew) shubham@sol:~/fly$ CUDA_VISIBLE_DEVICES=1 python3 kissingfugal-dense-chunked-fast.py
+embed_dim=256 beta=25 row_pen=10 col_pen=200
+[fast-adam] n=82168  m=256  chunk=1024  max_inner_batch=1024  use_amp=True  device=cuda
+step=    0  loss=2269502.7500  struct+feat=1560014.1250  constraint=709488.5625
+step=  500  loss=-461142.8438  struct+feat=-477012.2500  constraint=15869.3965
+step= 1000  loss=-691281.1875  struct+feat=-707278.6875  constraint=15997.5176
+step= 1500  loss=-753126.9375  struct+feat=-768612.3750  constraint=15485.4541
+step= 2000  loss=-776860.4375  struct+feat=-792024.8750  constraint=15164.4414
+step= 2500  loss=-788139.4375  struct+feat=-803104.7500  constraint=14965.3320
+step= 2999  loss=-794521.3750  struct+feat=-809401.9375  constraint=14880.5820
+[fast-adam] 3000 iters in 45684.2s
+[fast-adam] peak memory usage: gpu_mem=alloc=0.86GB reserved=12.52GB peak_alloc=11.72GB peak_reserved=12.52GB max_gpu_usage=53.2%
+acc_hungarian: skipped (dense P would use 25.15GB)
+rows close to 1: True (max|sum-1| = 1.073e-06)
+cols close to 1: False (max|sum-1| = 1.000e+00)
+acc_greedy:    0.5457
+
+
+# regal on 100-95
+Node 164128 has degree 0 and will not contribute to feature distribution
+Node 164269 has degree 0 and will not contribute to feature distribution
+REGAL time: 1738.346s
+greedy matching time: 1.403s
+total time: 1786.480s
+greedy accuracy: 0.373260
+
+
+#NSD on 100-95
+(flynew) shubham@sol:~/fly$ CUDA_VISIBLE_DEVICES=1 python3 run-nsd-slashdot.py
+loaded: n=82168 src_edges=543381 tar_edges=516216
+NSD
+NSD time: 380.096s
+greedy matching time: 3.479s
+total time: 383.761s
+greedy accuracy: 0.000012
+peak RAM usage: 81.872GiB
+peak GPU memory usage: 0.000GiB (NSD is CPU-only)
+
+
+(flynew) shubham@sol:~/fly$ CUDA_VISIBLE_DEVICES=1 python3 kissingfugal-dense-chunked-fast.py
+embed_dim=256 beta=25 row_pen=10 col_pen=200
+[fast-adam] n=82168  m=256  chunk=1024  max_inner_batch=1024  use_amp=True  device=cuda
+step=    0  loss=2274188.2500  struct+feat=1560274.0000  constraint=713914.1875
+step=  500  loss=-453080.9688  struct+feat=-469014.7500  constraint=15933.7910
+step= 1000  loss=-693128.8750  struct+feat=-709191.1250  constraint=16062.2510
+step= 1500  loss=-752902.4375  struct+feat=-768613.8750  constraint=15711.4414
+step= 1999  loss=-776384.8125  struct+feat=-791843.3125  constraint=15458.5234
+[fast-adam] 2000 iters in 30464.0s
+[fast-adam] peak memory usage: gpu_mem=alloc=0.86GB reserved=12.52GB peak_alloc=11.72GB peak_reserved=12.52GB max_gpu_usage=53.2%
+acc_hungarian: skipped (dense P would use 25.15GB)
+rows close to 1: True (max|sum-1| = 1.192e-06)
+cols close to 1: False (max|sum-1| = 1.157e+00)
+acc_greedy:    0.5207
+
+(flynew) shubham@sol:~/fly$ CUDA_VISIBLE_DEVICES=1 python3 kissingfugal-dense-chunked-fast.py
+embed_dim=256 beta=25 row_pen=10 col_pen=200
+[fast-adam] n=82168  m=256  chunk=1024  max_inner_batch=1024  train_col_bias=True  use_amp=True  device=cuda
+step=    0  loss=2265260.5000  struct+feat=1556225.1250  constraint=709035.3750
+step=  500  loss=-429637.2500  struct+feat=-445328.0000  constraint=15690.7412
+step= 1000  loss=-681549.1250  struct+feat=-697601.8750  constraint=16052.7344
+step= 1500  loss=-744657.1250  struct+feat=-760455.4375  constraint=15798.2852
+step= 1999  loss=-772768.0000  struct+feat=-788747.3750  constraint=15979.3994
+[fast-adam] 2000 iters in 31531.2s
+[fast-adam] peak memory usage: gpu_mem=alloc=0.86GB reserved=12.10GB peak_alloc=11.73GB peak_reserved=12.10GB max_gpu_usage=51.4%
+acc_hungarian: skipped (dense P would use 25.15GB)
+rows close to 1: True (max|sum-1| = 1.311e-06)
+cols close to 1: False (max|sum-1| = 1.000e+00)
+acc_top1:      0.5480
+diag_mass:     0.505366
+acc_greedy:    0.5218

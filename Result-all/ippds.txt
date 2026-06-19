@@ -1,0 +1,86 @@
+(flynew) shubham@sol:~/fly$ CUDA_VISIBLE_DEVICES=1 python3 kissingfugal-dense-chunked-fast.py
+embed_dim=200 beta=25 row_pen=10 col_pen=200
+[fast-adam] avg_degree=4.3  use_checkpoint=True
+[fast-adam] n=108176  m=200  chunk=1024  max_inner_batch=1024  init_mode=random  train_col_bias=True  use_amp=True  device=cuda
+step=    0  loss=107862.2969  struct+feat=104256.8594  constraint=3605.4382
+step=  500  loss=20897.2070  struct+feat=16936.9395  constraint=3960.2668
+step= 1000  loss=3149.4563  struct+feat=-242.9365  constraint=3392.3928
+step= 1500  loss=-8011.0005  struct+feat=-11649.8867  constraint=3638.8862
+step= 1999  loss=-15861.5938  struct+feat=-19654.4609  constraint=3792.8672
+[fast-adam] 2000 iters in 25814.5s
+[fast-adam] peak memory usage: gpu_mem=alloc=0.85GB reserved=8.91GB peak_alloc=8.13GB peak_reserved=8.91GB max_gpu_usage=37.8%
+acc_hungarian: skipped (dense P would use 43.59GB)
+rows close to 1: True (max|sum-1| = 1.431e-06)
+cols close to 1: False (max|sum-1| = 1.322e-01)
+acc_top1:      0.0004
+diag_mass:     0.000295
+acc_greedy:    0.0004
+
+(flynew) shubham@sol:~/fly$ PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True CUDA_VISIBLE_DEVICES=1 python3 kissing-fast.py
+embed_dim=1000 beta=25 row_pen=10 col_pen=200
+[fast-adam] avg_degree=4.3  use_checkpoint=True
+[fast-adam] n=108176  m=1000  chunk=1024  max_inner_batch=None  init_mode=random  train_col_bias=True  use_amp=True  device=cuda
+gpu_mem=alloc=0.02GB reserved=0.02GB peak_alloc=0.02GB peak_reserved=0.02GB max_gpu_usage=0.1%
+step=    0  loss=363502.7500  struct+feat=111604.9375  constraint=251897.7969
+step=  500  loss=29795.3848  struct+feat=28715.8945  constraint=1079.4908
+step= 1000  loss=16191.2168  struct+feat=15100.2910  constraint=1090.9261
+step= 1500  loss=11649.8828  struct+feat=10973.7949  constraint=676.0876
+step= 1999  loss=-6918.3774  struct+feat=-7569.7861  constraint=651.4085
+[fast-adam] 2000 iters in 38550.8s
+[fast-adam] peak memory usage: gpu_mem=alloc=4.08GB reserved=15.10GB peak_alloc=13.93GB peak_reserved=15.10GB max_gpu_usage=64.1%
+acc_hungarian: skipped (dense P would use 43.59GB)
+rows close to 1: True (max|sum-1| = 2.265e-06)
+cols close to 1: False (max|sum-1| = 1.709e-01)
+acc_top1:      0.1242
+diag_mass:     0.044809
+acc_greedy:    0.0813
+
+(flynew) shubham@sol:~/fly$ PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True CUDA_VISIBLE_DEVICES=1 python3 kissing-fast.py
+embed_dim=2000 beta=25 row_pen=10 col_pen=200
+[fast-adam] avg_degree=4.3  use_checkpoint=True
+[fast-adam] n=108176  m=2000  chunk=1024  max_inner_batch=None  init_mode=random  train_col_bias=True  use_amp=True  device=cuda
+gpu_mem=alloc=0.02GB reserved=0.02GB peak_alloc=0.02GB peak_reserved=0.02GB max_gpu_usage=0.1%
+step=    0  loss=244066.5469  struct+feat=119098.4062  constraint=124968.1406
+step=  500  loss=28806.4004  struct+feat=27543.5547  constraint=1262.8464
+step= 1000  loss=15420.0469  struct+feat=14419.1289  constraint=1000.9176
+step= 1500  loss=10824.8398  struct+feat=10076.0537  constraint=748.7861
+step= 2000  loss=-16055.3926  struct+feat=-17037.2188  constraint=981.8263
+step= 2500  loss=-102554.9922  struct+feat=-103222.8438  constraint=667.8535
+step= 2999  loss=-212087.7344  struct+feat=-212455.4062  constraint=367.6650
+[fast-adam] 3000 iters in 78179.1s
+[fast-adam] peak memory usage: gpu_mem=alloc=8.11GB reserved=22.81GB peak_alloc=20.86GB peak_reserved=22.81GB max_gpu_usage=96.9%
+acc_hungarian: skipped (dense P would use 43.59GB)
+rows close to 1: True (max|sum-1| = 2.146e-06)
+cols close to 1: False (max|sum-1| = 3.066e-01)
+acc_top1:      0.5961
+diag_mass:     0.461444
+acc_greedy:    0.5180
+
+###regal
+Node 212615 has degree 0 and will not contribute to feature distribution
+Node 212801 has degree 0 and will not contribute to feature distribution
+Node 213249 has degree 0 and will not contribute to feature distribution
+Node 213796 has degree 0 and will not contribute to feature distribution
+Node 214133 has degree 0 and will not contribute to feature distribution
+Node 214492 has degree 0 and will not contribute to feature distribution
+Node 214561 has degree 0 and will not contribute to feature distribution
+Node 214780 has degree 0 and will not contribute to feature distribution
+Node 215035 has degree 0 and will not contribute to feature distribution
+Node 215434 has degree 0 and will not contribute to feature distribution
+Node 216194 has degree 0 and will not contribute to feature distribution
+REGAL time: 1852.494s
+greedy matching time: 1.906s
+total time: 1910.987s
+greedy accuracy: 0.075691
+peak RAM usage: 196.240MiB
+
+###nsd
+(flynew) shubham@sol:~/fly$ CUDA_VISIBLE_DEVICES= python3 run-nsd-slashdot.py 
+loaded: n=108176 src_edges=232647 tar_edges=221012
+NSD
+NSD time: 442.279s
+greedy matching time: 8.481s
+total time: 450.837s
+greedy accuracy: 0.000009
+peak RAM usage: 141.777GiB
+peak GPU memory usage: 0.000GiB (NSD is CPU-only)
