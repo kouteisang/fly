@@ -15,7 +15,6 @@ rows close to 1: True (max|sum-1| = 1.073e-06)
 cols close to 1: False (max|sum-1| = 1.000e+00)
 acc_greedy:    0.5457
 
-
 # regal on 100-95
 Node 164128 has degree 0 and will not contribute to feature distribution
 Node 164269 has degree 0 and will not contribute to feature distribution
@@ -68,3 +67,168 @@ cols close to 1: False (max|sum-1| = 1.000e+00)
 acc_top1:      0.5480
 diag_mass:     0.505366
 acc_greedy:    0.5218
+
+
+##final
+(flynew) shubham@sol:~/fly$ CUDA_VISIBLE_DEVICES=0 python3 kissing-fast.py
+[I/O] query_file=data/real_noise/slashdot/slashdot-100.txt target_file=data/real_noise/slashdot/slashdot-95.txt self_loops=True
+embed_dim=1000 beta=25 row_pen=10 col_pen=200
+[fast-adam] avg_degree=14.2  use_checkpoint=True
+[fast-adam] n=82168 mu=0.1 m=1000  chunk=1024  max_inner_batch=None  init_mode=random  train_col_bias=True  use_amp=True  device=cuda
+gpu_mem=alloc=0.04GB reserved=0.06GB peak_alloc=0.04GB peak_reserved=0.06GB max_gpu_usage=0.2%
+step=    0  loss=1757597.0000  struct+feat=1564734.3750  constraint=192862.6719
+step=  500  loss=-551471.3125  struct+feat=-560865.1250  constraint=9393.7900
+step= 1000  loss=-744855.3125  struct+feat=-754614.1250  constraint=9758.8398
+step= 1500  loss=-792942.0625  struct+feat=-802773.6875  constraint=9831.6299
+step= 1999  loss=-808876.4375  struct+feat=-818790.5000  constraint=9914.0830
+[fast-adam] 2000 iters in 44455.4s
+[fast-adam] peak memory usage: gpu_mem=alloc=3.14GB reserved=18.35GB peak_alloc=17.66GB peak_reserved=18.35GB max_gpu_usage=77.9%
+acc_hungarian: skipped (dense P would use 25.15GB)
+rows close to 1: True (max|sum-1| = 1.073e-06)
+cols close to 1: False (max|sum-1| = 1.190e+00)
+acc_top1:      0.5494
+diag_mass:     0.512476
+acc_greedy:    0.5230
+
+
+
+####100-100true
+(flynew) shubham@sol:~/fly$ CUDA_VISIBLE_DEVICES=1 python3 kissing-fast1.py
+[I/O] query_file=data/real_noise/slashdot/slashdot-100.txt target_file=data/real_noise/slashdot/slashdot-100.txt self_loops=True
+embed_dim=1000 beta=25 row_pen=10 col_pen=200
+[fast-adam] avg_degree=14.2  use_checkpoint=True
+[fast-adam] n=82168 mu=0.1 m=1000  chunk=1024  max_inner_batch=None  init_mode=random  train_col_bias=True  use_amp=True  device=cuda
+gpu_mem=alloc=0.04GB reserved=0.06GB peak_alloc=0.04GB peak_reserved=0.06GB max_gpu_usage=0.2%
+step=    0  loss=1793474.8750  struct+feat=1604300.8750  constraint=189173.9688
+step=  500  loss=-750980.5625  struct+feat=-758374.8750  constraint=7394.2915
+step= 1000  loss=-990500.6250  struct+feat=-997843.3750  constraint=7342.7710
+step= 1500  loss=-1031038.0625  struct+feat=-1038223.1875  constraint=7185.1440
+step= 1999  loss=-1047828.8125  struct+feat=-1054863.0000  constraint=7034.2002
+[fast-adam] 2000 iters in 44632.9s
+[fast-adam] peak memory usage: gpu_mem=alloc=3.14GB reserved=18.35GB peak_alloc=17.66GB peak_reserved=18.35GB max_gpu_usage=77.9%
+acc_hungarian: skipped (dense P would use 25.15GB)
+rows close to 1: True (max|sum-1| = 9.537e-07)
+cols close to 1: False (max|sum-1| = 1.000e+00)
+acc_top1:      0.8012
+diag_mass:     0.766894
+acc_greedy:    0.7980
+
+
+(flynew) shubham@sol:~/fly$ CUDA_VISIBLE_DEVICES=0 python3 kissing-fast.py
+[I/O] query_file=data/real_noise/slashdot/slashdot-100.txt target_file=data/real_noise/slashdot/slashdot-90.txt self_loops=True
+embed_dim=1000 beta=25 row_pen=10 col_pen=200
+[fast-adam] avg_degree=14.2  use_checkpoint=True
+[fast-adam] n=82168 mu=0.1 m=1000  chunk=1024  max_inner_batch=None  init_mode=random  train_col_bias=True  use_amp=True  device=cuda
+gpu_mem=alloc=0.04GB reserved=0.04GB peak_alloc=0.04GB peak_reserved=0.04GB max_gpu_usage=0.2%
+step=    0  loss=1717871.6250  struct+feat=1530281.0000  constraint=187590.5938
+step=  500  loss=-356040.0312  struct+feat=-377623.3125  constraint=21583.2871
+step= 1000  loss=-521421.7812  struct+feat=-544839.7500  constraint=23417.9727
+step= 1500  loss=-574980.0000  struct+feat=-598582.5625  constraint=23602.5723
+step= 1999  loss=-600043.9375  struct+feat=-623752.8125  constraint=23708.9004
+[fast-adam] 2000 iters in 44116.1s
+[fast-adam] peak memory usage: gpu_mem=alloc=3.14GB reserved=18.35GB peak_alloc=17.66GB peak_reserved=18.35GB max_gpu_usage=77.9%
+acc_hungarian: skipped (dense P would use 25.15GB)
+rows close to 1: True (max|sum-1| = 1.311e-06)
+cols close to 1: False (max|sum-1| = 2.000e+00)
+acc_top1:      0.4147
+diag_mass:     0.392552
+acc_greedy:    0.3936
+
+(flynew) shubham@sol:~/fly$ CUDA_VISIBLE_DEVICES=1 python3 kissing-fast1.py
+[I/O] query_file=data/real_noise/slashdot/slashdot-100.txt target_file=data/real_noise/slashdot/slashdot-85.txt self_loops=True
+embed_dim=1000 beta=25 row_pen=10 col_pen=200
+[fast-adam] avg_degree=14.2  use_checkpoint=True
+[fast-adam] n=82168 mu=0.1 m=1000  chunk=1024  max_inner_batch=None  init_mode=random  train_col_bias=True  use_amp=True  device=cuda
+gpu_mem=alloc=0.04GB reserved=0.04GB peak_alloc=0.04GB peak_reserved=0.04GB max_gpu_usage=0.2%
+step=    0  loss=1684323.2500  struct+feat=1493764.0000  constraint=190559.2969
+step=  500  loss=-201521.3750  struct+feat=-233913.9062  constraint=32392.5293
+step= 1000  loss=-347289.8750  struct+feat=-380612.6562  constraint=33322.7656
+step= 1500  loss=-398249.0312  struct+feat=-431701.0625  constraint=33452.0352
+step= 1999  loss=-430818.6250  struct+feat=-464363.1875  constraint=33544.5625
+[fast-adam] 2000 iters in 43645.8s
+[fast-adam] peak memory usage: gpu_mem=alloc=3.14GB reserved=18.35GB peak_alloc=17.66GB peak_reserved=18.35GB max_gpu_usage=77.9%
+acc_hungarian: skipped (dense P would use 25.15GB)
+rows close to 1: True (max|sum-1| = 1.431e-06)
+cols close to 1: False (max|sum-1| = 1.000e+00)
+acc_top1:      0.3558
+diag_mass:     0.327935
+acc_greedy:    0.3307
+
+(flynew) shubham@sol:~/fly$ CUDA_VISIBLE_DEVICES=0 python3 kissing-fast.py
+[I/O] query_file=data/real_noise/slashdot/slashdot-100.txt target_file=data/real_noise/slashdot/slashdot-80.txt self_loops=True
+embed_dim=1000 beta=25 row_pen=10 col_pen=200
+[fast-adam] avg_degree=14.2  use_checkpoint=True
+[fast-adam] n=82168 mu=0.1 m=1000  chunk=1024  max_inner_batch=None  init_mode=random  train_col_bias=True  use_amp=True  device=cuda
+gpu_mem=alloc=0.03GB reserved=0.04GB peak_alloc=0.03GB peak_reserved=0.04GB max_gpu_usage=0.2%
+step=    0  loss=1652224.3750  struct+feat=1461775.2500  constraint=190449.1406
+step=  500  loss=-16968.9688  struct+feat=-59850.1016  constraint=42881.1328
+step= 1000  loss=-142106.6875  struct+feat=-187460.1250  constraint=45353.4336
+step= 1500  loss=-191585.6562  struct+feat=-236829.3125  constraint=45243.6523
+step= 1999  loss=-222019.2812  struct+feat=-267312.1250  constraint=45292.8359
+[fast-adam] 2000 iters in 43449.9s
+[fast-adam] peak memory usage: gpu_mem=alloc=3.14GB reserved=18.35GB peak_alloc=17.66GB peak_reserved=18.35GB max_gpu_usage=77.9%
+acc_hungarian: skipped (dense P would use 25.15GB)
+rows close to 1: True (max|sum-1| = 1.669e-06)
+cols close to 1: False (max|sum-1| = 2.376e+00)
+acc_top1:      0.3018
+diag_mass:     0.266007
+acc_greedy:    0.2733
+
+###False
+(flynew) shubham@sol:~/fly$ CUDA_VISIBLE_DEVICES=0 python3 kissing-fast.py
+[I/O] query_file=data/real_noise/slashdot/slashdot-100.txt target_file=data/real_noise/slashdot/slashdot-95.txt self_loops=False
+embed_dim=1000 beta=25 row_pen=10 col_pen=200
+[fast-adam] avg_degree=12.3  use_checkpoint=True
+[fast-adam] n=82168 mu=0.1 m=1000  chunk=1024  max_inner_batch=None  init_mode=random  train_col_bias=True  use_amp=True  device=cuda
+gpu_mem=alloc=0.04GB reserved=0.04GB peak_alloc=0.04GB peak_reserved=0.04GB max_gpu_usage=0.2%
+step=    0  loss=1755652.1250  struct+feat=1565332.6250  constraint=190319.4531
+step=  500  loss=-528327.6250  struct+feat=-538543.5625  constraint=10215.9668
+step= 1000  loss=-700598.6875  struct+feat=-711924.6250  constraint=11325.9580
+step= 1500  loss=-737652.0000  struct+feat=-748973.5000  constraint=11321.4893
+step= 1999  loss=-749773.3125  struct+feat=-760855.0000  constraint=11081.6777
+[fast-adam] 2000 iters in 42398.4s
+[fast-adam] peak memory usage: gpu_mem=alloc=3.14GB reserved=18.18GB peak_alloc=17.28GB peak_reserved=18.18GB max_gpu_usage=77.2%
+acc_hungarian: skipped (dense P would use 25.15GB)
+rows close to 1: True (max|sum-1| = 1.311e-06)
+cols close to 1: False (max|sum-1| = 1.000e+00)
+acc_top1:      0.5466
+diag_mass:     0.511242
+acc_greedy:    0.5216
+
+##regal
+(flynew) shubham@sol:~/fly$ python3 regal.py
+Detected N=82168 (will use dense adjacency only if feasible)
+Estimated dense adjacency: 6.29 GiB
+Built dense adjacency matrices: src nnz=1086763 tar nnz=1086763
+Regal
+Source file: /home/shubham/fly/data/real_noise/slashdot/slashdot-100.txt
+Target file: /home/shubham/fly/data/real_noise/slashdot/slashdot-100.txt
+REGAL time: 1599.313s
+greedy matching time: 1.398s
+total time: 1647.289s
+greedy accuracy: 0.767306
+peak RAM usage: 113.311GiB
+
+Source file: /home/shubham/fly/data/real_noise/slashdot/slashdot-100.txt
+Target file: /home/shubham/fly/data/real_noise/slashdot/slashdot-90.txt
+REGAL time: 1648.619s
+greedy matching time: 1.420s
+total time: 1693.462s
+greedy accuracy: 0.142050
+peak RAM usage: 113.310GiB
+
+Source file: /home/shubham/fly/data/real_noise/slashdot/slashdot-100.txt
+Target file: /home/shubham/fly/data/real_noise/slashdot/slashdot-85.txt
+REGAL time: 803.129s
+greedy matching time: 1.454s
+total time: 852.396s
+greedy accuracy: 0.046174
+peak RAM usage: 113.310GiB
+
+Source file: /home/shubham/fly/data/real_noise/slashdot/slashdot-100.txt
+Target file: /home/shubham/fly/data/real_noise/slashdot/slashdot-80.txt
+REGAL time: 1654.299s
+greedy matching time: 1.414s
+total time: 1700.274s
+greedy accuracy: 0.015663
+peak RAM usage: 113.310GiB

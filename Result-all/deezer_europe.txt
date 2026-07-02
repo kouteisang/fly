@@ -264,3 +264,170 @@ cols close to 1: False (max|sum-1| = 1.165e-01)
 acc_top1:      0.8690
 diag_mass:     0.867483
 acc_greedy:    0.8690
+
+(flynew) shubham@sol:~/fly$ CUDA_VISIBLE_DEVICES=0 python3 kissing-fast.py
+embed_dim=1500 beta=25 row_pen=10 col_pen=200
+[fast-adam] avg_degree=6.6  use_checkpoint=True
+[fast-adam] n=28281 mu=0.1 m=1500  chunk=4096  max_inner_batch=None  init_mode=random  train_col_bias=True  use_amp=True  device=cuda
+gpu_mem=alloc=0.01GB reserved=0.02GB peak_alloc=0.01GB peak_reserved=0.02GB max_gpu_usage=0.1%
+step=    0  loss=88213.1250  struct+feat=44145.6562  constraint=44067.4727
+step=  500  loss=-26866.5273  struct+feat=-27127.0488  constraint=260.5222
+step= 1000  loss=-132559.7500  struct+feat=-132866.1719  constraint=306.4225
+step= 1500  loss=-156662.2500  struct+feat=-156763.3438  constraint=101.0934
+step= 1999  loss=-160579.5938  struct+feat=-160640.3281  constraint=60.7348
+[fast-adam] 2000 iters in 3080.9s
+[fast-adam] peak memory usage: gpu_mem=alloc=1.61GB reserved=8.10GB peak_alloc=7.04GB peak_reserved=8.10GB max_gpu_usage=34.4%
+acc_hungarian: 0.7791
+rows close to 1: True (max|sum-1| = 8.345e-07)
+cols close to 1: False (max|sum-1| = 8.546e-02)
+acc_top1:      0.7799
+diag_mass:     0.775243
+acc_greedy:    0.7748
+
+###final 100-95
+(flynew) shubham@sol:~/fly$ CUDA_VISIBLE_DEVICES=0 python3 kissingfugal-dense-chunked-fast.py
+embed_dim=1000 beta=25 row_pen=10 col_pen=200
+[fast-adam] avg_degree=6.6  use_checkpoint=True
+[fast-adam] n=28281  m=1000  chunk=4096  max_inner_batch=None  init_mode=random  train_col_bias=True  use_amp=True  device=cuda
+gpu_mem=alloc=0.01GB reserved=0.02GB peak_alloc=0.01GB peak_reserved=0.02GB max_gpu_usage=0.1%
+step=    0  loss=108581.5938  struct+feat=41047.1680  constraint=67534.4219
+step=  500  loss=-13864.9746  struct+feat=-14836.9980  constraint=972.0232
+step= 1000  loss=-138927.2812  struct+feat=-139795.6250  constraint=868.3491
+step= 1500  loss=-158509.9062  struct+feat=-159023.4219  constraint=513.5219
+step= 1999  loss=-162413.4062  struct+feat=-162783.3125  constraint=369.9120
+[fast-adam] 2000 iters in 2591.8s
+[fast-adam] peak memory usage: gpu_mem=alloc=1.08GB reserved=6.92GB peak_alloc=6.09GB peak_reserved=6.92GB max_gpu_usage=29.4%
+acc_hungarian: 0.7835
+rows close to 1: True (max|sum-1| = 8.345e-07)
+cols close to 1: False (max|sum-1| = 2.023e-01)
+acc_top1:      0.7848
+diag_mass:     0.778236
+acc_greedy:    0.7790
+
+
+
+100-100###final
+(flynew) shubham@sol:~/fly$ CUDA_VISIBLE_DEVICES=0 python3 kissingfugal-dense-chunked-fast.py
+embed_dim=1000 beta=25 row_pen=10 col_pen=200
+[fast-adam] avg_degree=6.6  use_checkpoint=True
+[fast-adam] n=28281  m=1000  chunk=4096  max_inner_batch=8192  init_mode=random  train_col_bias=True  use_amp=True  device=cuda
+gpu_mem=alloc=0.01GB reserved=0.02GB peak_alloc=0.01GB peak_reserved=0.02GB max_gpu_usage=0.1%
+step=    0  loss=109204.7500  struct+feat=41859.6016  constraint=67345.1484
+step=  500  loss=-28589.9102  struct+feat=-29611.2422  constraint=1021.3325
+step= 1000  loss=-163067.0469  struct+feat=-163793.1094  constraint=726.0579
+step= 1500  loss=-181611.8906  struct+feat=-181907.5312  constraint=295.6432
+step= 1999  loss=-183546.7188  struct+feat=-183684.1406  constraint=137.4265
+[fast-adam] 2000 iters in 2401.2s
+[fast-adam] peak memory usage: gpu_mem=alloc=1.08GB reserved=8.96GB peak_alloc=6.66GB peak_reserved=8.96GB max_gpu_usage=38.1%
+acc_hungarian: 0.8674
+rows close to 1: True (max|sum-1| = 8.345e-07)
+cols close to 1: False (max|sum-1| = 9.739e-02)
+acc_top1:      0.8674
+diag_mass:     0.865556
+acc_greedy:    0.8671
+
+(flynew) shubham@sol:~/fly$ CUDA_VISIBLE_DEVICES=1 python3 kissingfugal-dense-chunked-fast.py
+[I/O] query_file=data/real_noise/deezer_europe/deezer-100.txt target_file=data/real_noise/deezer_europe/deezer-90.txt
+embed_dim=1000 beta=25 row_pen=10 col_pen=200
+[fast-adam] avg_degree=6.6  use_checkpoint=True
+[fast-adam] n=28281  m=1000  chunk=4096  max_inner_batch=8192  init_mode=random  train_col_bias=True  use_amp=True  device=cuda
+gpu_mem=alloc=0.01GB reserved=0.02GB peak_alloc=0.01GB peak_reserved=0.02GB max_gpu_usage=0.1%
+step=    0  loss=106626.0156  struct+feat=40484.1992  constraint=66141.8125
+step=  500  loss=114.0888  struct+feat=-894.5343  constraint=1008.6231
+step= 1000  loss=-108053.8594  struct+feat=-109147.9141  constraint=1094.0553
+step= 1500  loss=-132314.4062  struct+feat=-133144.5938  constraint=830.1887
+step= 1999  loss=-137545.1875  struct+feat=-138157.8750  constraint=612.6811
+[fast-adam] 2000 iters in 2595.6s
+[fast-adam] peak memory usage: gpu_mem=alloc=1.08GB reserved=8.96GB peak_alloc=6.66GB peak_reserved=8.96GB max_gpu_usage=38.1%
+acc_hungarian: 0.6911
+rows close to 1: True (max|sum-1| = 8.345e-07)
+cols close to 1: False (max|sum-1| = 3.037e-01)
+acc_top1:      0.6938
+diag_mass:     0.680705
+acc_greedy:    0.6815
+
+(flynew) shubham@sol:~/fly$ CUDA_VISIBLE_DEVICES=0 python3 kissingfugal-dense-chunked-fast1.py
+[I/O] query_file=data/real_noise/deezer_europe/deezer-100.txt target_file=data/real_noise/deezer_europe/deezer-85.txt
+embed_dim=1000 beta=25 row_pen=10 col_pen=200
+[fast-adam] avg_degree=6.6  use_checkpoint=True
+[fast-adam] n=28281  m=1000  chunk=4096  max_inner_batch=None  init_mode=random  train_col_bias=True  use_amp=True  device=cuda
+gpu_mem=alloc=0.01GB reserved=0.02GB peak_alloc=0.01GB peak_reserved=0.02GB max_gpu_usage=0.1%
+step=    0  loss=107656.7031  struct+feat=39762.1914  constraint=67894.5156
+step=  500  loss=5293.1216  struct+feat=4497.8989  constraint=795.2226
+step= 1000  loss=-82249.4922  struct+feat=-83539.8984  constraint=1290.4086
+step= 1500  loss=-109894.2969  struct+feat=-110859.2344  constraint=964.9393
+step= 1999  loss=-117160.7344  struct+feat=-117941.4609  constraint=780.7239
+[fast-adam] 2000 iters in 2550.7s
+[fast-adam] peak memory usage: gpu_mem=alloc=1.08GB reserved=6.89GB peak_alloc=6.09GB peak_reserved=6.89GB max_gpu_usage=29.3%
+acc_hungarian: 0.6145
+rows close to 1: True (max|sum-1| = 8.345e-07)
+cols close to 1: False (max|sum-1| = 1.628e-01)
+acc_top1:      0.6184
+diag_mass:     0.599531
+acc_greedy:    0.5996
+
+
+(flynew) shubham@sol:~/fly$ CUDA_VISIBLE_DEVICES=0 python3 kissingfugal-dense-chunked-fast.py
+[I/O] query_file=data/real_noise/deezer_europe/deezer-100.txt target_file=data/real_noise/deezer_europe/deezer-80.txt
+embed_dim=1000 beta=25 row_pen=10 col_pen=200
+[fast-adam] avg_degree=6.6  use_checkpoint=True
+[fast-adam] n=28281  m=1000  chunk=4096  max_inner_batch=8192  init_mode=random  train_col_bias=True  use_amp=True  device=cuda
+gpu_mem=alloc=0.01GB reserved=0.02GB peak_alloc=0.01GB peak_reserved=0.02GB max_gpu_usage=0.1%
+step=    0  loss=108154.5938  struct+feat=39414.7305  constraint=68739.8594
+step=  500  loss=12366.7939  struct+feat=11750.4102  constraint=616.3842
+step= 1000  loss=-48689.5039  struct+feat=-50155.7773  constraint=1466.2722
+step= 1500  loss=-83948.7266  struct+feat=-85050.0625  constraint=1101.3385
+step= 1999  loss=-93366.0703  struct+feat=-94539.7266  constraint=1173.6559
+[fast-adam] 2000 iters in 2325.8s
+[fast-adam] peak memory usage: gpu_mem=alloc=1.08GB reserved=8.94GB peak_alloc=6.66GB peak_reserved=8.94GB max_gpu_usage=38.0%
+acc_hungarian: 0.5303
+rows close to 1: True (max|sum-1| = 1.073e-06)
+cols close to 1: False (max|sum-1| = 2.269e-01)
+acc_top1:      0.5346
+diag_mass:     0.510294
+acc_greedy:    0.5103
+
+###REGAL
+(flynew) shubham@sol:~/fly$ python3 regal.py
+Source file: /home/shubham/fly/data/real_noise/deezer_europe/deezer-100.txt
+Target file: /home/shubham/fly/data/real_noise/deezer_europe/deezer-100.txt
+Detected N=28281 (will use dense adjacency only if feasible)
+Estimated dense adjacency: 0.74 GiB
+Built dense adjacency matrices: src nnz=185504 tar nnz=185504
+Regal
+REGAL time: 130.792s
+greedy matching time: 0.484s
+total time: 136.482s
+greedy accuracy: 0.840105
+peak RAM usage: 13.523GiB
+
+100-95
+REGAL time: 137.238s
+greedy matching time: 0.476s
+total time: 142.919s
+greedy accuracy: 0.365121
+peak RAM usage: 13.522GiB
+
+Source file: /home/shubham/fly/data/real_noise/deezer_europe/deezer-100.txt
+Target file: /home/shubham/fly/data/real_noise/deezer_europe/deezer-90.txt
+REGAL time: 106.238s
+greedy matching time: 0.484s
+total time: 111.928s
+greedy accuracy: 0.157491
+peak RAM usage: 13.522GiB
+
+Source file: /home/shubham/fly/data/real_noise/deezer_europe/deezer-100.txt
+Target file: /home/shubham/fly/data/real_noise/deezer_europe/deezer-85.txt
+REGAL time: 134.248s
+greedy matching time: 0.480s
+total time: 139.623s
+greedy accuracy: 0.070401
+peak RAM usage: 13.522GiB
+
+Source file: /home/shubham/fly/data/real_noise/deezer_europe/deezer-100.txt
+Target file: /home/shubham/fly/data/real_noise/deezer_europe/deezer-80.txt
+REGAL time: 132.655s
+greedy matching time: 0.478s
+total time: 138.140s
+greedy accuracy: 0.030020
+peak RAM usage: 13.522GiB

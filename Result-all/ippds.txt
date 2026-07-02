@@ -84,3 +84,112 @@ total time: 450.837s
 greedy accuracy: 0.000009
 peak RAM usage: 141.777GiB
 peak GPU memory usage: 0.000GiB (NSD is CPU-only)
+
+
+###finals
+100-100
+(flynew) shubham@sol:~/fly$ CUDA_VISIBLE_DEVICES=1 python3 kissing-fast.py
+[I/O] query_file=data/real_noise/ippds/ippds-100.txt target_file=data/real_noise/ippds/ippds-100.txt self_loops=False
+embed_dim=2000 beta=25 row_pen=10 col_pen=200
+[fast-adam] avg_degree=4.3  use_checkpoint=True
+[fast-adam] n=108175 mu=0.1 m=2000  chunk=1024  max_inner_batch=None  init_mode=random  train_col_bias=True  use_amp=True  device=cuda
+gpu_mem=alloc=0.02GB reserved=0.02GB peak_alloc=0.02GB peak_reserved=0.02GB max_gpu_usage=0.1%
+step=    0  loss=246779.3438  struct+feat=120202.0156  constraint=126577.3203
+step=  500  loss=26753.7305  struct+feat=24988.0547  constraint=1765.6758
+step= 1000  loss=10815.7891  struct+feat=10345.4609  constraint=470.3282
+step= 1500  loss=-8951.3154  struct+feat=-10056.4629  constraint=1105.1476
+step= 1999  loss=-148797.5781  struct+feat=-149973.1094  constraint=1175.5249
+[fast-adam] 2000 iters in 53489.3s
+[fast-adam] peak memory usage: gpu_mem=alloc=8.11GB reserved=22.48GB peak_alloc=20.86GB peak_reserved=22.48GB max_gpu_usage=95.5%
+acc_hungarian: skipped (dense P would use 43.59GB)
+rows close to 1: True (max|sum-1| = 2.861e-06)
+cols close to 1: False (max|sum-1| = 1.388e-01)
+acc_top1:      0.8069
+diag_mass:     0.327034
+acc_greedy:    0.7355
+
+###############iterations=2000(Low accuracy)
+(flynew) shubham@sol:~/fly$ CUDA_VISIBLE_DEVICES=1 python3 kissing-fast.py
+[I/O] query_file=data/real_noise/ippds/ippds-100.txt target_file=data/real_noise/ippds/ippds-95.txt self_loops=False
+embed_dim=2000 beta=25 row_pen=10 col_pen=200
+[fast-adam] avg_degree=4.3  use_checkpoint=True
+[fast-adam] n=108175 mu=0.1 m=2000  chunk=1024  max_inner_batch=None  init_mode=random  train_col_bias=True  use_amp=True  device=cuda
+gpu_mem=alloc=0.02GB reserved=0.02GB peak_alloc=0.02GB peak_reserved=0.02GB max_gpu_usage=0.1%
+step=    0  loss=245832.8281  struct+feat=119557.0000  constraint=126275.8281
+step=  500  loss=28351.3281  struct+feat=27456.9277  constraint=894.3997
+step= 1000  loss=15289.3848  struct+feat=13918.9297  constraint=1370.4548
+step= 1500  loss=10383.6279  struct+feat=8918.3828  constraint=1465.2451
+step= 1999  loss=-23057.1094  struct+feat=-23971.7305  constraint=914.6219
+[fast-adam] 2000 iters in 53281.5s
+[fast-adam] peak memory usage: gpu_mem=alloc=8.11GB reserved=22.48GB peak_alloc=20.86GB peak_reserved=22.48GB max_gpu_usage=95.5%
+acc_hungarian: skipped (dense P would use 43.59GB)
+rows close to 1: True (max|sum-1| = 2.742e-06)
+cols close to 1: False (max|sum-1| = 1.565e-01)
+acc_top1:      0.1975
+diag_mass:     0.078007
+acc_greedy:    0.1425
+
+(flynew) shubham@sol:~/fly$ CUDA_VISIBLE_DEVICES=0 python3 kissing-fast.py
+[I/O] query_file=data/real_noise/ippds/ippds-100.txt target_file=data/real_noise/ippds/ippds-90.txt self_loops=False
+embed_dim=2000 beta=25 row_pen=10 col_pen=200
+[fast-adam] avg_degree=4.3  use_checkpoint=True
+[fast-adam] n=108175 mu=0.1 m=2000  chunk=1024  max_inner_batch=None  init_mode=random  train_col_bias=True  use_amp=True  device=cuda
+gpu_mem=alloc=0.02GB reserved=0.02GB peak_alloc=0.02GB peak_reserved=0.02GB max_gpu_usage=0.1%
+step=    0  loss=245489.6406  struct+feat=119357.6094  constraint=126132.0312
+step=  500  loss=33416.6484  struct+feat=31562.0820  constraint=1854.5652
+step= 1000  loss=20570.8965  struct+feat=19371.9121  constraint=1198.9835
+step= 1500  loss=18388.4219  struct+feat=16604.7070  constraint=1783.7155
+step= 1999  loss=13669.3818  struct+feat=12583.4346  constraint=1085.9476
+[fast-adam] 2000 iters in 53158.8s
+[fast-adam] peak memory usage: gpu_mem=alloc=8.11GB reserved=22.48GB peak_alloc=20.86GB peak_reserved=22.48GB max_gpu_usage=95.5%
+acc_hungarian: skipped (dense P would use 43.59GB)
+rows close to 1: True (max|sum-1| = 2.742e-06)
+cols close to 1: False (max|sum-1| = 1.165e-01)
+acc_top1:      0.0290
+diag_mass:     0.008023
+acc_greedy:    0.0183
+
+(flynew) shubham@sol:~/fly$ python3 regal.py
+Detected N=108175 (will use dense adjacency only if feasible)
+Estimated dense adjacency: 10.90 GiB
+Built dense adjacency matrices: src nnz=465290 tar nnz=465290
+Regal
+Source file: /home/shubham/fly/data/real_noise/ippds/ippds-100.txt
+Target file: /home/shubham/fly/data/real_noise/ippds/ippds-100.txt
+REGAL time: 1874.301s
+greedy matching time: 1.829s
+total time: 1935.572s
+greedy accuracy: 0.370936
+peak RAM usage: 196.282MiB
+
+Source file: /home/shubham/fly/data/real_noise/ippds/ippds-100.txt
+Target file: /home/shubham/fly/data/real_noise/ippds/ippds-95.txt
+REGAL time: 1754.956s
+greedy matching time: 1.902s
+total time: 1819.402s
+greedy accuracy: 0.070275
+peak RAM usage: 196.283GiB
+
+Source file: /home/shubham/fly/data/real_noise/ippds/ippds-100.txt
+Target file: /home/shubham/fly/data/real_noise/ippds/ippds-90.txt
+REGAL time: 1632.323s
+greedy matching time: 1.843s
+total time: 1697.561s
+greedy accuracy: 0.019764
+peak RAM usage: 196.283GiB
+
+Source file: /home/shubham/fly/data/real_noise/ippds/ippds-100.txt
+Target file: /home/shubham/fly/data/real_noise/ippds/ippds-85.txt
+REGAL time: 2483.014s
+greedy matching time: 1.849s
+total time: 2550.328s
+greedy accuracy: 0.005528
+peak RAM usage: 196.285GiB
+
+Source file: /home/shubham/fly/data/real_noise/ippds/ippds-100.txt
+Target file: /home/shubham/fly/data/real_noise/ippds/ippds-80.txt
+REGAL time: 1703.337s
+greedy matching time: 1.820s
+total time: 1763.193s
+greedy accuracy: 0.002117
+peak RAM usage: 196.285GiB
